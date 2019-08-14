@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -
 
 ### Changed
-- 
+- updated sqlalchemy for lost-base
+- added db migration tool package to lost-base
 
 ### Deprecated
 - 
