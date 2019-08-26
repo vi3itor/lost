@@ -1,7 +1,5 @@
 import React, {Component} from 'react'
-import {connect} from 'react-redux'
 import _ from 'lodash'
-import actions from '../../../actions'
 
 import AnnoBar from './AnnoBar'
 import Point from './Point'
@@ -9,75 +7,37 @@ import BBox from './BBox'
 import Line from './Line'
 import Polygon from './Polygon'
 import * as modes from '../types/modes'
+import * as canvasActions from '../types/canvasActions'
 import * as annoStatus from '../types/annoStatus'
 import * as colorlut from '../utils/colorlut'
 import * as constraints from '../utils/constraints'
-
-
-const {selectAnnotation, siaShowSingleAnno, siaShowLabelInput} = actions
-
 
 class Annotation extends Component{
 
     constructor(props){
         super(props)
         this.state = {
-            mode: modes.VIEW,
+            // mode: modes.VIEW,
             selAreaCss: 'sel-area-off',
             visibility: 'visible',
             anno: undefined
         }
         this.myAnno = React.createRef()
-        // this.myKey = _.uniqueId('annokey')
         
     }
 
-    
     componentWillMount(){
         console.log('Annotation did mount ', this.props.data.id, this.props.data)
-        if (this.props.data.createMode){
-            this.props.selectAnnotation(this.props.data)
-            this.setMode(modes.CREATE)
-        } 
         this.setState({anno: {...this.props.data}})
-        if (this.props.data.status === annoStatus.DELETED){
-            this.setVisible(false)
-        }
     }
 
     componentDidUpdate(prevProps){
-        console.log('Annotation Update', this.state, this.props.type, this.props.data.id)
+        if (this.isSelected()){
+            console.log('Annotation Update', this.state, this.props.type, this.props.data.id)
+        }
         if (prevProps.data !== this.props.data){
-            console.log('Annotation got new annotation data from props', this.props.data)
+            console.log('ANNOTATION annoChangeMode - Annotation got new annotation data from props -> state', this.props.data, this.state.anno)
             this.setState({anno: {...this.props.data}})
-        }
-        if (prevProps.keyDown !== this.props.keyDown){
-            if (this.isSelected()){
-                switch (this.props.keyDown){
-                    case 'Control':
-                        this.setMode(modes.ADD)
-                        break
-                    case 'Enter':
-                        this.setMode(modes.EDIT_LABEL)
-                        break
-                    case 'Delete':
-                        this.setMode(modes.DELETED)
-                        break
-                    default:
-                        break
-                }
-            }
-        }
-        if (prevProps.keyUp !== this.props.keyUp){
-            if (this.isSelected()){
-                switch (this.props.keyUp){
-                    case 'Control':
-                        this.setMode(modes.VIEW)
-                        break
-                    default:
-                        break
-                }
-            }
         }
         if (prevProps.showSingleAnno !== this.props.showSingleAnno){
             if (this.props.showSingleAnno === undefined){
@@ -90,18 +50,6 @@ class Annotation extends Component{
                 }
             }
         }
-        if (prevProps.showLabelInput !== this.props.showLabelInput){
-            if (!this.props.showLabelInput) this.setMode(modes.VIEW)
-        }
-        if (this.isSelected()){
-            if(this.state.anno !== this.props.selectedAnno){
-                this.setState({anno: this.props.selectedAnno})
-                console.log('Annotation update anno', this.props.selectedAnno)
-            }
-        }
-        if (this.state.anno.status === annoStatus.DELETED){
-            this.setVisible(false)
-        }
     }
     
     /*************
@@ -110,10 +58,7 @@ class Annotation extends Component{
     onClick(e: Event){
         e.stopPropagation()
         console.log('Annotation select annotation on click: ', this.state.anno)
-        this.props.selectAnnotation(this.state.anno)
-        //Create a new key in order to create a completely new compontent
-        //this.myKey = _.uniqueId('annokey')
-
+        this.performedAction(this.state.anno, canvasActions.ANNO_SELECTED)
     }
 
     onMouseDown(e: Event){
@@ -128,93 +73,82 @@ class Annotation extends Component{
         e.preventDefault()
     }
 
-    onModeChange(newMode, oldMode){
-        console.log('MODE CHANGED (id, old, new): ',this.props.data.id, oldMode, '->', newMode)
-        switch (newMode){
-            case modes.ADD:
-            case modes.EDIT:
-            case modes.MOVE:
-            case modes.CREATE:
-                this.props.siaShowSingleAnno(this.props.data.id)
-                break
-            case modes.EDIT_LABEL:
-                break
-            case modes.VIEW:
-                this.props.siaShowSingleAnno(undefined)
-                break
-            default:
-                break
-        }
-        let newAnno
-        switch (oldMode){
-            case modes.ADD:
-            case modes.EDIT:
-            case modes.MOVE:
-                newAnno = {
-                    ...this.state.anno,
-                    data: [...this.myAnno.current.state.anno],
-                    status: this.state.anno.status !== annoStatus.NEW ? annoStatus.CHANGED : annoStatus.NEW
-                }
-                this.setState({anno: newAnno})
-                this.props.selectAnnotation(newAnno)
-                break
-            case modes.CREATE:
-                newAnno = {
-                    ...this.state.anno,
-                    data: [...this.myAnno.current.state.anno],
-                    status: annoStatus.NEW
-                }
-                this.setState({anno: newAnno})
-                this.props.selectAnnotation(newAnno)
-                break
-            // case modes.CREATE:
-            //     console.log('oldMode Create anno', this.myAnno.current.state.anno)
-            //     this.setState({anno: {...this.myAnno.current.state.anno}})
-            //     this.props.selectAnnotation(this.myAnno.current.state.anno)
-            //     break
-            default:
-                break
-                
-        }
-        this.setMode(newMode)
+    handleModeChangeRequest(anno, mode){
+        console.log('ANNOTATION: annoChangeMode - handleModeChangeRequest', anno, mode)
+        this.setMode(anno, mode)
     }
 
     /*************
      * LOGIC     *
      *************/
-    setMode(mode){
-        if (this.state.mode !== mode){
+    
+     /**
+     * Trigger callback when this annotation performed an action
+     * 
+     * @param {String} pAction 
+     */
+    performedAction(anno, pAction){
+
+        if (this.props.onAction){
+            this.props.onAction(anno, pAction)
+        }
+    }
+
+    /**
+     * Handle a performed action from a specific annotation
+     * 
+     * @param {list} annoData - Annotation data that define a box, line, 
+     *      polygon, point
+     * @param {string} pAction - The performed action
+     * @param {int} selectedNode - The node of the annotation that 
+     *      was selected
+     */
+    performedAnnoAction(anno, pAction){
+        this.performedAction(anno, pAction)
+    }
+
+    setAnnoMode(anno, mode){
+        this.setState({
+            anno: {
+                ...anno,
+                mode: mode
+            }
+        })
+    }
+
+    setMode(anno, mode){
+        if (anno.mode !== mode){
             switch (mode){
                 case modes.EDIT_LABEL:
                     if (constraints.allowedToLabel(
                         this.props.allowedActions,
-                        this.state.anno
+                        anno
                     )){
-                        this.setState({mode: mode})
-                        this.props.siaShowLabelInput(true)
-                        this.props.siaShowSingleAnno(this.props.data.id)
+                        this.setAnnoMode(anno, mode)
                     }
                     break
                 case modes.DELETED:
                     if(constraints.allowedToDelete(
                         this.props.allowedActions,
-                        this.state.anno
+                        anno
                     )){
-                        this.setState({mode: mode})
-                        this.props.siaShowSingleAnno(undefined)
-                        this.props.selectAnnotation(undefined)
-                        this.setVisible(false)
+                        this.setAnnoMode(anno, mode)
+                        const newAnno = {
+                            ...anno, 
+                            status: annoStatus.DELETED
+                        }
                         this.setState({
-                            anno: {
-                                ...this.state.anno, 
-                                status: annoStatus.DELETED
-                            }
+                            anno: newAnno
                         })
-                        console.log('Annotation in deleted state')
+                        this.performedAction(newAnno, canvasActions.ANNO_DELETED)
                     }
                     break
+                case modes.MOVE:
+                    this.setAnnoMode(anno, mode)
+                    this.performedAction(anno, canvasActions.ANNO_ENTER_MOVE_MODE)
+                    break
                 default:
-                    this.setState({mode: mode})
+                    this.setAnnoMode(anno, mode)
                     break
             }
         }
@@ -233,13 +167,10 @@ class Annotation extends Component{
     }
 
     isSelected(){
-        return this.props.selectedAnno.id === this.props.data.id
+        return this.props.selectedAnno === this.props.data.id
     }
 
     getResult(){
-        // console.log('Hi there i am a ', this.props.type, 
-        //     this.props.data.id, this.props.data)
-        // console.log('My annos are: ', this.myAnno.current.state.anno)
         return {
             ...this.state.anno,
             data: this.myAnno.current.state.anno,
@@ -260,7 +191,6 @@ class Annotation extends Component{
                 stroke: color,
                 fill: color,
                 strokeWidth: this.props.uiConfig.strokeWidth/this.props.svg.scale,
-                // strokeDasharray:"5,5",
                 r:this.props.uiConfig.nodeRadius/this.props.svg.scale
 
             }
@@ -287,54 +217,49 @@ class Annotation extends Component{
     **************/
     renderAnno(){
         const type = this.props.type
-        const anno = this.state.anno.data
-        const allowedToEdit = constraints.allowedToEditBounds(
-            this.props.allowedActions,
-            this.state.anno
-        )
+        // const allowedToEdit = constraints.allowedToEditBounds(
+        //     this.props.allowedActions,
+        //     this.state.anno
+        // )
         switch(type) {
             case 'point':
-                return <Point ref={this.myAnno} anno={anno} 
+                return <Point ref={this.myAnno} anno={this.state.anno} 
                     style={this.getStyle()}
                     className={this.getCssClass()}
-                    allowedToEdit={allowedToEdit}
                     isSelected={this.isSelected()}
                     svg={this.props.svg}
-                    mode={this.state.mode}
-                    onModeChange={(newMode, oldMode) => {this.onModeChange(newMode, oldMode)}}
+                    onModeChangeRequest={(anno, mode) => this.handleModeChangeRequest(anno, mode)}
+                    onAction={(anno, pAction) => this.performedAnnoAction(anno, pAction)}
                     />
             case 'bBox':
-                return <BBox ref={this.myAnno} anno={anno} 
+                return <BBox ref={this.myAnno} anno={this.state.anno} 
                     style={this.getStyle()}
                     className={this.getCssClass()}
-                    allowedToEdit={allowedToEdit}
                     onNodeClick={(e, idx) => this.onNodeClick(e, idx)}
                     onNodeMouseDown={(e, idx) => this.onNodeMouseDown(e, idx)}
                     isSelected={this.isSelected()}
                     svg={this.props.svg}
-                    mode={this.state.mode}
-                    onModeChange={(newMode, oldMode) => {this.onModeChange(newMode, oldMode)}}
+                    onModeChangeRequest={(anno, mode) => this.handleModeChangeRequest(anno, mode)}
+                    onAction={(anno, pAction) => this.performedAnnoAction(anno, pAction)}
                     />
             case 'polygon':
-                return <Polygon ref={this.myAnno} anno={anno} 
+                return <Polygon ref={this.myAnno} anno={this.state.anno} 
                     style={this.getStyle()}
                     className={this.getCssClass()}
-                    allowedToEdit={allowedToEdit}
                     onNodeClick={(e, idx) => this.onNodeClick(e, idx)}
                     isSelected={this.isSelected()}
                     svg={this.props.svg}
-                    mode={this.state.mode}
-                    onModeChange={(newMode, oldMode) => {this.onModeChange(newMode, oldMode)}}
+                    onModeChangeRequest={(anno, mode) => this.handleModeChangeRequest(anno, mode)}
+                    onAction={(anno, pAction) => this.performedAnnoAction(anno, pAction)}
                     />
             case 'line':
-                return <Line ref={this.myAnno} anno={anno}
+                return <Line ref={this.myAnno} anno={this.state.anno}
                     style={this.getStyle()}
                     className={this.getCssClass()}
-                    allowedToEdit={allowedToEdit}
                     isSelected={this.isSelected()}
                     svg={this.props.svg}
-                    mode={this.state.mode}
-                    onModeChange={(newMode, oldMode) => {this.onModeChange(newMode, oldMode)}}
+                    onAction={(anno, pAction) => this.performedAnnoAction(anno, pAction)}
+                    onModeChangeRequest={(anno, mode) => this.handleModeChangeRequest(anno, mode)}
                     />
             default:
                 console.error("Wrong annoType for annotations: ",
@@ -343,22 +268,16 @@ class Annotation extends Component{
     }
     
     renderAnnoBar(){
-        // console.log('Inputfile gerändert')
-        // return (
-        //     <foreignObject x="10" y="10" width="100" height="150"> 
-        //         <div xmlns="http://www.w3.org/1999/xhtml">
-        //             <input placeholder='JUnge' onKeyDown={e => this.onFocus(e)} onKeyUp={e => this.onFocus(e)}></input>
-        //         </div>
-        //     </foreignObject>
-        // )
-        // if (!this.myAnno.current) return null
-        //return <g style={{position:'absolute', color:'orange', left:this.props.svg.left}}>Text</g>
-
-
-        return <AnnoBar anno={this.state.anno} mode={this.state.mode}/>
+        return <AnnoBar 
+            anno={this.state.anno} 
+            mode={this.state.anno.mode}
+            possibleLabels={this.props.possibleLabels}
+            />
     }
     render(){
+        console.log('ANNOTATION: annoChangeMode - Render Single Anno state', this.state)
         if(!this.state.anno.data) return null
+        if(this.state.anno.status === annoStatus.DELETED) return null
         return (
             <g>
             <g visibility={this.state.visibility}
@@ -373,34 +292,6 @@ class Annotation extends Component{
             </g>
         )
     }
-    
-    // render(){
-    //     if (this.props.showSingleAnno === undefined){
-    //         return this.renderStuff()
-    //     } else if (this.props.showSingleAnno === this.props.data.id) {
-    //         return this.renderStuff()
-    //     } else {
-    //         return null
-    //     }
-        
-        
-    // }
 }
 
-function mapStateToProps(state) {
-    return ({
-        selectedAnno: state.sia.selectedAnno,
-        keyDown: state.sia.keyDown,
-        keyUp: state.sia.keyUp,
-        uiConfig: state.sia.uiConfig,
-        showSingleAnno: state.sia.showSingleAnno,
-        showLabelInput: state.sia.showLabelInput,
-        allowedActions: state.sia.config.actions
-    })
-}
-
-export default connect(
-    mapStateToProps, 
-    {selectAnnotation, siaShowSingleAnno, siaShowLabelInput}
-    ,null,
-    {forwardRef:true})(Annotation)
+export default Annotation

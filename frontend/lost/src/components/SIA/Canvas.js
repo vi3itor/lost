@@ -1,31 +1,92 @@
 import React, {Component} from 'react'
-import {connect} from 'react-redux'
 import _ from 'lodash'
 import Annotation from './Annotation/Annotation'
 import AnnoLabelInput from './AnnoLabelInput'
-
-import actions from '../../actions'
+import ImgBar from './ImgBar'
 
 import * as transform from './utils/transform'
+import * as keyActions from './utils/keyActions'
+import KeyMapper from './utils/keyActions'
+import * as TOOLS from './types/tools'
 import * as modes from './types/modes'
+import UndoRedo from './utils/hist'
 import * as annoStatus from './types/annoStatus'
+import * as canvasActions from './types/canvasActions'
+import { Loader, Dimmer } from 'semantic-ui-react';
 
-const { 
-    getSiaImage, getSiaAnnos, siaKeyDown, 
-    siaKeyUp, selectAnnotation, getSiaLabels,
-    siaUpdateAnnos, siaSetImageLoaded, siaUpdateReduxAnnos,
-    siaSetSVG, getSiaConfig, siaSendFinishToBackend
-} = actions
 
+/**
+ * SIA Canvas element that handles annotations within an image
+ * 
+ * @param {React.Ref} container - A react ref to a div that defines the
+ *      space where this Canvas lives in.
+ * @param {object} annos -  A json object containing all annotation 
+ *      information for an image
+ *      {
+ *          image : {
+ *              id: int, 
+ *              url: string, 
+ *              number: int, 
+ *              amount: int, 
+ *              isFirst: bool, 
+ *              isLast: bool
+ *          },
+ *          annotations: {
+ *              bBoxes: [{
+ *                  id: int,
+ *                  labelIds: list of int,
+ *                  data: {}
+ *              },...],
+ *              points: []
+ *              lines: []
+ *              polygons: []
+ *          }
+ *      }
+ * @param {object} image - The actual image blob that will be displayed
+ *      {id: int, data: blob}
+ * @param {object} uiConfig - User interface configs 
+ *      {nodesRadius: int, strokeWidth: int}
+ * @param {int} layoutUpdate - A counter that triggers a layout update
+ *      everytime it is incremented.
+ * @param {string} selectedTool - The tool that is selected to draw an 
+ *      annotation. Possible choices are: 'bBox', 'point', 'line', 'polygon'
+ * @param {object} canvasConfig - Configuration for this canvas
+ *  {
+ *      tools: {
+ *           point: true,
+ *           line: true,
+ *           polygon: true,
+ *           bbox: true
+ *      },
+ *      multilabels: true,
+ *      actions: {
+ *          drawing: bool,
+ *          labeling: bool,
+ *          edit: {
+ *              label: bool,
+ *              bounds: bool,
+ *              delete: bool
+ *          }
+ *      }
+ *  }
+ * @param {bool} imgBarVisible - Controls visibility of the ImgBar
+ * @param {object} layoutOffset - Offset of the canvas inside the container:
+ *      {left:int, top:int, right:int, bottom:int} values in pixels.
+ * @event onSVGUpdate - Fires when the svg in canvas changed.
+ *      args: {width: int, height: int, scale: float, translateX: float,
+ *      translateY:float}
+ * @event onImageLoaded - Fires when an image was loaded into the canvas
+ * @event onAnnoSelect - Fires when an annotation was selected or if the
+ *      selected annotation was updated.
+ * @event onImgBarClose - Fires when close button on ImgBar was hit.
+ * 
+ */
 class Canvas extends Component{
 
     constructor(props){
         super(props)
         this.state = {
-            image: {
-                id: undefined,
-                data: undefined,
-            },
+            
             svg: {
                 width: '100%',
                 height: '100%',
@@ -34,109 +95,99 @@ class Canvas extends Component{
                 translateY:0
             },
             annos: [],
-            mode: modes.VIEW
+            mode: modes.VIEW,
+            // selectedAnnoId: {id:undefined},
+            selectedAnnoId: undefined,
+            showSingleAnno: undefined,
+            showLabelInput: false,
+            imageLoaded: false,
+            imgLabelIds: [],
+            imgLabelChanged: false,
+            performedImageInit: false,
+            prevLabel: [],
+            imageData: undefined
         }
         this.img = React.createRef()
         this.svg = React.createRef()
-        this.annoRefs = []
         this.container = React.createRef()
+        this.hist = new UndoRedo()
+        this.keyMapper = new KeyMapper((keyAction) => this.handleKeyAction(keyAction))
     }
 
     componentDidMount(){
-        this.props.getSiaAnnos(-1)
-        this.props.getSiaLabels()
-        this.props.getSiaConfig()
-        // console.warn('No sia config will be loaded')
     }
 
-    componentDidUpdate(prevProps){
-        console.log('didupdate')
-		if(this.props.annos.image){
-            if(this.props.annos.image.id !== this.state.image.id){
-			this.props.getSiaImage(this.props.annos.image.url).then(response=>
-			{
-                this.setState({image: {
-                    ...this.state.image, 
-                    id: this.props.annos.image.id, 
-                    data:window.URL.createObjectURL(response)
-                }})
-            }
-            )       
-
+    componentDidUpdate(prevProps, prevState){
+        // if (this.props.image.id !== prevProps.image.id){
+            
+        // }
+        if (prevProps.annos !== this.props.annos){
+            this.setState({imgLabelIds: this.props.annos.image.labelIds})
+            this.setState({
+                imageLoaded: false,
+                imageData: undefined
+            })
         }
+        if (this.state.imageData !== this.props.image.data){
+            this.setState({imageData: this.props.image.data})
         }
-        if (prevProps.getNextImage !== this.props.getNextImage){
-            if (this.props.getNextImage){
-                this.updateBackendAnnos()
-                this.props.getSiaAnnos(this.props.getNextImage)
-            }
+        // if (!this.state.imageLoaded){
+        //     if(this.props.annos.image.id === this.props.image.id){
+        //         this.setState({
+        //             imageLoaded: true
+        //         })
+        //         if (this.props.onImageLoaded){
+        //             this.props.onImageLoaded()
+        //         }
+        //     }
+        // }
+        if (this.state.performedImageInit){
+            console.log('canvasHist Performed image init', this.state)
+            // Initialize canvas history
+            this.setState({performedImageInit:false})
+            this.hist.clearHist()
+            this.hist.push({
+                ...this.getAnnos(),
+                selectedAnnoId: undefined
+            }, 'init')
         }
-        if (prevProps.getPrevImage !== this.props.getPrevImage){
-            if (this.props.getPrevImage){
-                this.updateBackendAnnos()
-                this.props.getSiaAnnos(this.props.getPrevImage, 'prev')
-            }
-        }
-        
-        if (prevProps.taskFinished !== this.props.taskFinished){
-            this.updateBackendAnnos()
-            this.props.siaSendFinishToBackend()
-        }
-
-        if (this.props.imageLoaded){
+        if (this.state.imageLoaded){
             // Selected annotation should be on top
-            this.putSelectedOnTop(prevProps)
-            if (prevProps.imageLoaded !== this.props.imageLoaded){
-                this.updateCanvasView(this.props.annos.drawables)
+            this.putSelectedOnTop(prevState)
+            if (prevState.imageLoaded !== this.state.imageLoaded){
+                this.updateCanvasView(this.props.annos.annotations)
+                this.setImageLabels(this.props.annos.image.labelIds)
+                this.setState({
+                    performedImageInit:true
+                })
             } 
-            if (prevProps.appliedFullscreen !== this.props.appliedFullscreen){
-                console.log('Canvas applied Fullscreen', this.props.appliedFullscreen)
-                this.updateCanvasView(this.props.annos.drawables)
-            } else if(prevProps.layoutUpdate !== this.props.layoutUpdate){
-                this.props.selectAnnotation(undefined)
+            if(prevProps.layoutUpdate !== this.props.layoutUpdate){
+                this.selectAnnotation(undefined)
                 this.updateCanvasView(this.getAnnoBackendFormat())
             }
-            // else if (prevProps.annos !== this.props.annos){
-                // 
-            // }
-            if (prevProps.requestAnnoUpdate !== this.props.requestAnnoUpdate){
-                console.log('Canvas siaUpdateReduxAnnos')
-                this.props.siaUpdateReduxAnnos(
-                    {...this.props.annos,
-                        drawables: this.getAnnoBackendFormat()
-                    })
-            }
-            console.log('Canvas this.state.annos',this.state.annos)
+            console.log('Canvas update this.state',this.state)
+            console.log('Canvas imageLoaded',this.state.imageLoaded)
             
         }
-        // // Workaround to find out when workingOnAnnoTask component has rendered,
-        // // in order to calculate correct position for canvas
-        // if (prevProps.workingOnAnnoTask !== this.props.workingOnAnnoTask){
-        //     this.updateCanvasView()
-        // }
+        console.log('canvasHistory canvas state', this.hist.getHist(), this.state)
     }
-    
+
     onImageLoad(){
-        this.props.siaSetImageLoaded(true)
+        console.log('Canvas onImageLoade')
+        this.setState({
+            imageLoaded: true
+        })
+        if (this.props.onImageLoaded){
+            this.props.onImageLoaded()
+        }
     }
 
     onMouseOver(){
         //Prevent scrolling on svg
-        
-        // document.body.style.position = "fixed"
-        // document.body.style.overflowY = "scroll"
-        
-        // document.body.style.overflow = "hidden"
         this.svg.current.focus()
         console.log('Mouse Over Canvas')
     }
-    onMouseOut(){
-        //Enable scrolling after leaving svg
-        // document.body.style.overflow = "auto"
-        
-        // document.body.style.position = "static"
-        // document.body.style.overflowY = "auto"
-    }
+
     onWheel(e:Event){
         // Zoom implementation. Note that svg is first scaled and 
         // second translated!
@@ -168,17 +219,10 @@ class Canvas extends Component{
 
     onMouseDown(e){
         if (e.button === 0){
-            this.props.selectAnnotation(undefined)
+            this.selectAnnotation(undefined)
         }
         else if (e.button === 1){
-            this.collectAnnos()
             this.setMode(modes.CAMERA_MOVE)
-            // this.setState({svg:
-            //     {...this.state.svg, 
-            //         scale: 1.0, 
-            //         translateX: 0, 
-            //         translateY: 0
-            //     }})
         }
         else if (e.button === 2){
             //Create annotation on right click
@@ -188,7 +232,7 @@ class Canvas extends Component{
 
     onAnnoMouseDown(e){
         if (e.button === 1){
-            this.collectAnnos()
+            // this.collectAnnos()
             this.setMode(modes.CAMERA_MOVE)
         }
         else if (e.button === 2){
@@ -207,28 +251,62 @@ class Canvas extends Component{
         }
     }
 
-    // onKeyPress(e: Event){
-    //     e.preventDefault()
-    //     console.log(e.key, e.keyCode, e.keyCode, e.altKey, e.ctrlKey, e.metaKey, e.shiftKey)
-    //     if (e.key === 'Delete'){
-    //         this.removeSelectedAnno()
-    //     }
-    // }
+    handleKeyAction(action){
+        const anno = this.findAnno(this.state.selectedAnnoId)
+        console.log('handleKeyAction: ', action)
+        switch(action){
+            case keyActions.EDIT_LABEL:
+                if (this.state.selectedAnnoId){
+                    this.showLabelInput()
+                    this.updateSelectedAnno(anno, modes.EDIT_LABEL)
+                }
+                break
+            case keyActions.DELETE_ANNO:
+                this.onAnnoPerformedAction(anno, canvasActions.ANNO_DELETED)
+                break
+            case keyActions.ENTER_ANNO_ADD_MODE:
+                if (anno){
+                    this.updateSelectedAnno(
+                        anno, modes.ADD
+                    )
+                    // this.showSingleAnno(anno.id)
+                }
+                break
+            case keyActions.LEAVE_ANNO_ADD_MODE:
+                console.log('handleKeyAction LEAVE_ANNO_EDIT_MODE')
+                if (anno){
+                    this.updateSelectedAnno(
+                        anno, modes.VIEW
+                    )
+                    // this.showSingleAnno(undefined)
+                }
+                break
+            case keyActions.UNDO:
+                this.undo()
+                break
+            case keyActions.REDO:
+                this.redo()
+                break
+            case keyActions.TRAVERSE_ANNOS:
+                this.traverseAnnos()
+                break
+            default:
+                console.warn('Unknown key action', action)
+        }
+
+    }
 
     onKeyDown(e: Event){
         e.preventDefault()
-        // if (e.key === 'Delete'){
-        //     this.removeSelectedAnno()
-        // }
-        this.props.siaKeyDown(e.key)
+        this.keyMapper.keyDown(e.key)
         console.log('KEY down on Canvas', e.key, e.keyCode, e.keyCode, e.altKey, e.ctrlKey, e.metaKey, e.shiftKey)
-        this.traverseAnnos(e.key)
+        const anno = this.findAnno(this.state.selectedAnnoId)
     }
 
     onKeyUp(e: Event){
         e.preventDefault()
-        this.props.siaKeyUp(e.key)
-        console.log('KEY up on Canvas', e.key, e.keyCode, e.keyCode, e.altKey, e.ctrlKey, e.metaKey, e.shiftKey)
+        this.keyMapper.keyUp(e.key)
+        // console.log('KEY up on Canvas', e.key, e.keyCode, e.keyCode, e.altKey, e.ctrlKey, e.metaKey, e.shiftKey)
     }
 
     onMouseMove(e: Event){
@@ -241,63 +319,247 @@ class Canvas extends Component{
         this.removeSelectedAnno()
     }
     
-    onAnnoLabelInputClose(){
-        this.svg.current.focus()
+    
+
+    /**
+     * Handle actions that have been performed by an annotation 
+     * @param {Number} anno Id of the annotation
+     * @param {String} pAction Action that was performed
+     */
+    onAnnoPerformedAction(anno, pAction){
+        console.log('onAnnoPerformedAction', anno, pAction)
+        let newAnnos = undefined
+        switch(pAction){
+            case canvasActions.ANNO_SELECTED:
+                this.selectAnnotation(anno.id)
+                break
+            case canvasActions.ANNO_START_CREATING:
+                newAnnos = this.updateSelectedAnno(anno)
+                this.pushHist(
+                    newAnnos, anno.id,
+                    pAction, this.state.showSingleAnno
+                )
+                break
+            case canvasActions.ANNO_CREATED:
+                newAnnos = this.updateSelectedAnno(anno, modes.VIEW)
+                console.log('ANNO_CREATED newAnnos', newAnnos)
+                this.pushHist(
+                    newAnnos, anno.id,
+                    pAction, undefined
+                )
+                this.showSingleAnno(undefined)
+                break
+            case canvasActions.ANNO_MOVED:
+                newAnnos = this.updateSelectedAnno(anno, modes.VIEW)
+                this.showSingleAnno(undefined)
+                this.pushHist(
+                    newAnnos, anno.id,
+                    pAction, undefined
+                )
+                break
+            case canvasActions.ANNO_ENTER_MOVE_MODE:
+                this.showSingleAnno(anno.id)
+                break
+            case canvasActions.ANNO_ADDED_NODE:
+                newAnnos = this.updateSelectedAnno(anno, modes.VIEW)
+                this.pushHist(
+                    newAnnos, anno.id,
+                    pAction, this.state.showSingleAnno
+                )
+                break
+            case canvasActions.ANNO_EDITED:
+                newAnnos = this.updateSelectedAnno(anno, modes.VIEW)
+                this.pushHist(
+                    newAnnos, anno.id,
+                    pAction, this.state.showSingleAnno
+                )
+                break
+            case canvasActions.ANNO_DELETED:
+                newAnnos = this.updateSelectedAnno(anno, modes.DELETED)
+                this.selectAnnotation(undefined)
+                this.pushHist(
+                    newAnnos, undefined,
+                    pAction, this.state.showSingleAnno
+                )
+                break
+            case canvasActions.ANNO_LABEL_UPDATE:
+                newAnnos = this.updateSelectedAnno(anno, modes.VIEW)
+                this.pushHist(
+                    newAnnos, anno.id,
+                    pAction, undefined
+                )
+                break
+            case canvasActions.ANNO_CREATED_NODE:
+                const merged = this.mergeSelectedAnno(anno, modes.CREATE)
+                this.pushHist(
+                    merged.newAnnos, anno.id,
+                    pAction, this.state.showSingleAnno
+                )
+                break
+            case canvasActions.ANNO_CREATED_FINAL_NODE:
+                console.log('canvasActions.ANNO_CREATED_FINAL_NODE', anno)
+                newAnnos = this.updateSelectedAnno(anno, modes.VIEW)
+                this.pushHist(
+                    newAnnos, anno.id,
+                    pAction, undefined
+                )
+                this.showSingleAnno(undefined)
+                break
+            default:
+                console.warn('Action not handeled', pAction)
+                break
+        }
     }
+
+    onAnnoLabelInputUpdate(anno){
+        this.updateSelectedAnno(anno)
+    }
+
+    onAnnoLabelInputClose(){
+        console.log('onAnnoLabelInputClose')
+        this.svg.current.focus()
+        this.showLabelInput(false)
+        this.showSingleAnno(undefined)
+        const anno = this.findAnno(this.state.selectedAnnoId)
+        this.onAnnoPerformedAction(anno, canvasActions.ANNO_LABEL_UPDATE)
+    }
+
+    handleImgBarClose(){
+        if (this.props.onImgBarClose){
+            this.props.onImgBarClose()
+        }
+    }
+
+    handleImgLabelUpdate(label){
+        this.setState({
+            imgLabelIds: label,
+            imgLabelChanged: true,
+        })
+        this.pushHist(this.state.annos,
+            this.state.selectedAnnoId,
+            canvasActions.IMG_LABEL_UPDATE,
+            this.state.showSingleAnno,
+            label
+        )
+    }
+
     /*************
      * LOGIC     *
     **************/
 
+    unloadImage(){
+        if(this.state.imageLoaded){
+            this.setState({imageLoaded:false})
+        }
+    }
+    /**
+     * Find a annotation by id in current state
+     * 
+     * @param {int} annoId - Id of the annotation to find
+     */
+    findAnno(annoId){
+        return this.state.annos.find(e => {
+            return e.id === annoId
+        })
+    }
+
+    pushHist(annos, selectedAnnoId, pAction, showSingleAnno, imgLabelIds=this.state.imgLabelIds){
+        this.hist.push({
+            ...this.getAnnos(annos, false),
+            selectedAnnoId: selectedAnnoId,
+            showSingleAnno: showSingleAnno,
+            imgLabelIds: imgLabelIds
+        }, pAction)
+    }
+
+    undo(){
+        if (!this.hist.isEmpty()){
+            const cState = this.hist.undo()
+            console.log('canvasHistory UNDO: ',cState)
+            this.setCanvasState(
+                cState.entry.annotations,
+                cState.entry.imgLabelIds, 
+                cState.entry.selectedAnnoId,
+                cState.entry.showSingleAnno)
+        }
+    }
+
+    redo(){
+        if (!this.hist.isEmpty()){
+            const cState = this.hist.redo()
+            console.log('canvasHistory REDO: ',cState)
+            this.setCanvasState(
+                cState.entry.annotations,
+                cState.entry.imgLabelIds, 
+                cState.entry.selectedAnnoId,
+                cState.entry.showSingleAnno)
+        }
+    }
+
+    /**
+     * Set state of Canvas annotations and imageLabels.
+     * 
+     * @param {list} annotations - Annotations in backend format
+     * @param {list} imgLabelIds - IDs of the image labels
+     * @param {object} selectedAnno - The selected annotation
+     * @param {int} showSingleAnno - The id of the single annotation
+     *      that should be visible
+     */
+    setCanvasState(annotations, imgLabelIds, selectedAnnoId, showSingleAnno){
+        this.updateCanvasView({...annotations})
+        this.setImageLabels([...imgLabelIds])
+        this.selectAnnotation(selectedAnnoId)
+        this.setState({showSingleAnno: showSingleAnno})
+    }
+
+    selectAnnotation(annoId){
+        if (annoId){
+            this.setState({
+                selectedAnnoId: annoId
+            })
+        } else {
+            this.setState({
+                selectedAnnoId: undefined
+            })
+            if (this.state.showLabelInput){
+                this.onAnnoLabelInputClose()
+            }
+        }
+        if(this.props.onAnnoSelect){
+            const anno = this.findAnno(annoId)
+            this.props.onAnnoSelect(anno)
+        }
+    }
+
     /**
      * Traverse annotations by key hit
-     * 
-     * @param key A key code
      */
-    traverseAnnos(key){
-        console.log('Traverse annos', key, this.state.annos, this.props.selectedAnno)
-        if (key === 'Tab'){
-            if (this.state.annos.length > 0){
-                if (!this.props.selectedAnno.id){
-                    this.props.selectAnnotation(this.state.annos[0])
+    traverseAnnos(){
+        if (this.state.annos.length > 0){
+            const myAnnos = this.state.annos.filter(e => {
+                return e.status !== annoStatus.DELETED
+            })
+            console.log('Traverse annos: filteredAnnos', myAnnos)
+            if (myAnnos.length > 0){
+                if (!this.state.selectedAnnoId){
+                    this.selectAnnotation(myAnnos[0].id)
                 } else {
-                    const myAnnos = this.state.annos.filter(e => {
-                        return e.status !== annoStatus.DELETED
-                    })
                     let currentIdx = myAnnos.findIndex( e => {
-                        return e.id === this.props.selectedAnno.id
+                        return e.id === this.state.selectedAnnoId
                     })
                     if (currentIdx+1 < myAnnos.length){
-                        this.props.selectAnnotation(myAnnos[currentIdx+1])
+                        this.selectAnnotation(myAnnos[currentIdx+1].id)
                     } else {
-                        this.props.selectAnnotation(myAnnos[0])
+                        this.selectAnnotation(myAnnos[0].id)
                     }
                 }
-
             }
         }
     } 
-    // Collect the current data of all annotations and update state
-    collectAnnos(){
-        // console.log('Canvas collectAnnos this.annoRefs', this.annoRefs)
-        let annos = []  
-        this.annoRefs.forEach( ref => {
-            if (ref) {
-                annos.push(ref.current.getResult())
-            }
-        })
-        console.log('collectAnnos Result annos', annos)
-        this.setState({annos: [...annos]})
-    }
 
-    getAnnoBackendFormat(forBackendPost=false){
-        let annos = []  
-        //Get newest anno data from components
-        this.annoRefs.forEach( ref => {
-            if (ref) {
-                annos.push(ref.current.getResult())
-            }
-        })
-        const bAnnos = annos.map( el => {
+    getAnnoBackendFormat(forBackendPost=false, annos=undefined){
+        let myAnnos = annos ? annos : this.state.annos
+        const bAnnos = myAnnos.map( el => {
             var annoId 
             if (forBackendPost){
                 // If an annotation will be send to backend,
@@ -322,14 +584,17 @@ class Canvas extends Component{
         console.log('Annotation getAnnoBackendFormat', backendFormat)
         return backendFormat
     }
-    updateBackendAnnos(){
-        const backendFormat = this.getAnnoBackendFormat(true)
+
+    getAnnos(annos=undefined, removeFrontedIds=true){
+        const myAnnos = annos ? annos : this.state.annos
+        const backendFormat = this.getAnnoBackendFormat(removeFrontedIds, myAnnos)
         const finalData = {
             imgId: this.props.annos.image.id,
-            drawables: backendFormat
+            imgLabelIds: this.state.imgLabelIds,
+            imgLabelChanged: this.state.imgLabelChanged,
+            annotations: backendFormat
         }
-        console.log('Update Backend annos', finalData)
-        this.props.siaUpdateAnnos(finalData)
+        return finalData
     }
 
     moveCamera(e){
@@ -361,44 +626,64 @@ class Canvas extends Component{
         }
     }
 
-    // removeSelectedAnno(){
-    //     const annos = this.state.annos.filter( (el) => {
-    //         return el.id !== this.props.selectedAnno.id
-    //     })
-    //     this.setState({annos: annos})
-    // }
+    showLabelInput(visible=true){
+        this.setState({
+            showLabelInput: visible
+        })
+        if (visible){
+            this.showSingleAnno(this.state.selectedAnnoId)
+        }
+    }
 
     createNewAnnotation(e){
         if (this.props.selectedTool){
             const mousePos = this.getMousePosition(e)
+            // const selAnno = this.findAnno(this.state.selectedAnnoId)
+            const newAnno = {
+                id: _.uniqueId('new'),
+                type: this.props.selectedTool,
+                data: [{
+                    x: mousePos.x, 
+                    y: mousePos.y
+                },{
+                    x: mousePos.x,
+                    y: mousePos.y
+                }],
+                mode: modes.CREATE,
+                status: annoStatus.NEW,
+                labelIds: this.state.prevLabel,
+                selectedNode: 1
+            }
             this.setState({
-                annos: [...this.state.annos, {
-                    id: _.uniqueId('new'),
-                    type: this.props.selectedTool,
-                    data: [{
-                        x: mousePos.x, 
-                        y: mousePos.y
-                    }],
-                    createMode: true,
-                    status: annoStatus.NEW,
-                    labelIds: []
-                }]
+                annos: [...this.state.annos, newAnno],
+                selectedAnnoId: newAnno.id,
+                showSingleAnno: newAnno.id
             })
+            if (this.props.selectedTool !== TOOLS.BBOX && 
+                this.props.selectedTool !== TOOLS.POINT){    
+                const merged = this.mergeSelectedAnno(newAnno)
+                this.pushHist(
+                    merged.newAnnos,
+                    newAnno.id, 
+                    canvasActions.ANNO_CREATED_NODE,
+                    newAnno.id
+                )
+            }
         } else {
             console.warn('No annotation tool selected!')
         }
     }
 
-    putSelectedOnTop(prevProps){
+    putSelectedOnTop(prevState){
         // The selected annotation need to be rendered as last one in 
         // oder to be above all other annotations.
-        if (this.props.selectedAnno.id){
-            if (prevProps.selectedAnno.id !== this.props.selectedAnno.id){
+        if (this.state.selectedAnnoId){
+            if (prevState.selectedAnnoId !== this.state.selectedAnnoId){
                 const annos = this.state.annos.filter( (el) => {
-                    return el.id !== this.props.selectedAnno.id
+                    return el.id !== this.state.selectedAnnoId
                 })
                 const lastAnno = this.state.annos.find( el => {
-                    return el.id === this.props.selectedAnno.id
+                    return el.id === this.state.selectedAnnoId
                 })
                 annos.push(lastAnno)
                 this.setState({annos: [
@@ -408,22 +693,89 @@ class Canvas extends Component{
         }
     }
 
+    /**
+     * Update selected anno and override mode if desired
+     * 
+     * @param {object} anno - The new annotation the becomes the selected anno
+     * @param {string} mode - The new mode for the selected anno
+     * @returns The new anno that was set as selectedAnno in state and 
+     *      the new annos list that was set in state
+     */
+    updateSelectedAnno(anno, mode=undefined){
+        if (!anno) return
+        const {newAnnos, newAnno} = this.mergeSelectedAnno(anno, mode)
+        this.setState({
+            annos: newAnnos,
+            selectedAnnoId: anno.id,
+            prevLabel: anno.labelIds, 
+        })
+        if(this.props.onAnnoSelect){
+            this.props.onAnnoSelect(newAnno)
+        }
+        return newAnnos
+    }
+
+    mergeSelectedAnno(anno, mode=undefined){
+        const filtered = this.state.annos.filter( (el) => {
+            return el.id !== anno.id
+        }) 
+        let newAnno
+        if (mode){
+            newAnno = {...anno, mode:mode}
+            if (mode === modes.DELETED){
+                newAnno = {
+                    ...newAnno,
+                    status: annoStatus.DELETED
+                }
+            } else {
+                newAnno = {
+                    ...newAnno,
+                    status: anno.status !== annoStatus.NEW ? annoStatus.CHANGED : annoStatus.NEW
+                }
+            }
+        } else {
+            newAnno = {...anno}
+        }
+        filtered.push(newAnno)
+        const newAnnos = [...filtered]
+        return {newAnnos, newAnno}
+    }
+
+    showSingleAnno(annoId){
+        if (this.state.showSingleAnno !== annoId){
+            this.setState({showSingleAnno: annoId})
+        } 
+    }
+
     updateImageSize(){
         
         var container = this.props.container.current.getBoundingClientRect()
-        var canvasLeft
-        if (container.left < this.props.uiConfig.toolBarWidth){
-            canvasLeft = this.props.uiConfig.toolBarWidth + 10
-        } else {
-            canvasLeft = container.left
-        }
+        
+        // if (container.left < this.props.uiConfig.toolBarWidth){
+        //     canvasLeft = this.props.uiConfig.toolBarWidth + 10
+        // } else {
+        //     canvasLeft = container.left
+        // }
         console.log('Canvas container', container)
         console.log('CanvasLeft', canvasLeft, this.props.uiConfig.toolBarWidth)
-        var clientWidth = document.documentElement.clientWidth
+        // var clientWidth = document.documentElement.clientWidth
         var clientHeight = document.documentElement.clientHeight
-        var maxImgWidth = container.right -canvasLeft
-        var maxImgHeight = clientHeight - container.top - 10
-        if (this.props.appliedFullscreen) maxImgHeight = maxImgHeight + 10 
+        var canvasTop
+        var canvasLeft
+        var maxImgHeight
+        var maxImgWidth 
+        if(this.props.layoutOffset){
+            canvasTop = container.top + this.props.layoutOffset.top
+            canvasLeft = container.left + this.props.layoutOffset.left
+            maxImgHeight = clientHeight - container.top - this.props.layoutOffset.bottom - this.props.layoutOffset.top
+            maxImgWidth = container.right -canvasLeft - this.props.layoutOffset.right
+        } else {
+            canvasTop = container.top
+            canvasLeft = container.left
+            maxImgHeight = clientHeight - container.top
+            maxImgWidth = container.right -canvasLeft
+        }
+        // if (this.props.appliedFullscreen) maxImgHeight = maxImgHeight + 10 
         var ratio = this.img.current.naturalWidth / this.img.current.naturalHeight
         var imgWidth = "100%"
         var imgHeight = "100%"
@@ -446,37 +798,56 @@ class Canvas extends Component{
         console.log('imgWidth, imgHeight', imgWidth, imgHeight)
         const svg = {
             ...this.state.svg, width : imgWidth, height: imgHeight,
-            left: canvasLeft, top: container.top
+            left: canvasLeft, top: canvasTop
         }
         this.setState({svg})
-        this.props.siaSetSVG(svg)
+        this.svgUpdate(svg)
         return {imgWidth, imgHeight}
     }
 
-    updateCanvasView(drawables){
+    svgUpdate(svg){
+        if(this.props.onSVGUpdate){
+            this.props.onSVGUpdate(svg)
+        }
+    }
+
+    setImageLabels(labelIds){
+        console.log('initImageLabels', labelIds)
+        if (labelIds !== this.state.imgLabelIds){
+            this.setState({
+                imgLabelIds: labelIds
+            })
+        }
+    }
+
+    updateCanvasView(annotations){
         
 
         var annos = []
         //Annotation data should be present and a pixel accurate value 
         //for svg should be calculated
-        if(drawables){
-            console.log('UpdateCanvasView drawables', drawables)
+        if(annotations){
+            console.log('UpdateCanvasView annotations', annotations)
             const imgSize = this.updateImageSize()
             annos = [
-                ...drawables.bBoxes.map((element) => {
-                    return {...element, type:'bBox', createMode:false, 
+                ...annotations.bBoxes.map((element) => {
+                    return {...element, type:'bBox', 
+                    mode: element.mode ? element.mode : modes.VIEW, 
                     status: element.status ? element.status : annoStatus.DATABASE}
                 }),
-                ...drawables.lines.map((element) => {
-                    return {...element, type:'line', createMode:false, 
+                ...annotations.lines.map((element) => {
+                    return {...element, type:'line', 
+                    mode: element.mode ? element.mode : modes.VIEW, 
                     status: element.status ? element.status : annoStatus.DATABASE}
                 }),
-                ...drawables.polygons.map((element) => {
-                    return {...element, type:'polygon', createMode:false, 
+                ...annotations.polygons.map((element) => {
+                    return {...element, type:'polygon', 
+                    mode: element.mode ? element.mode : modes.VIEW, 
                     status: element.status ? element.status : annoStatus.DATABASE}
                 }),
-                ...drawables.points.map((element) => {
-                    return {...element, type:'point', createMode:false, 
+                ...annotations.points.map((element) => {
+                    return {...element, type:'point', 
+                    mode: element.mode ? element.mode : modes.VIEW, 
                         status: element.status ? element.status : annoStatus.DATABASE
                     }
                 })
@@ -493,27 +864,24 @@ class Canvas extends Component{
     renderAnnotations(){
         // Do not render annotations while moving the camera!
         if (this.state.mode !== modes.CAMERA_MOVE){
-            // if (this.props.showSingleAnno){
-            //     let idx = this.state.annos.findIndex( e => {
-            //         return e.id === this.props.showSingleAnno
-            //     })
-            //     return <Annotation type={this.state.annos[idx].type}
-            //             data={this.state.annos[idx]} key={this.state.annos[idx].id}
-            //             svg={this.state.svg} ref={this.annoRefs[idx]}/>
-            // } else {
-            console.log('Canvas render annotations', this.state.annos)
-            this.annoRefs = []
+            // this.annoRefs = []
+            console.log('hist Render annotations', this.state.annos)
             const annos =  this.state.annos.map((el) => {
-                this.annoRefs.push(React.createRef())
+                // this.annoRefs.push(React.createRef())
                 return <Annotation type={el.type} 
                         data={el} key={el.id} svg={{...this.state.svg}}
-                        ref={this.annoRefs[this.annoRefs.length - 1]}
+                        // ref={this.annoRefs[this.annoRefs.length - 1]}
                         onMouseDown={e => this.onAnnoMouseDown(e)}
+                        onAction={(anno, pAction) => this.onAnnoPerformedAction(anno, pAction)}
+                        selectedAnno={this.state.selectedAnnoId}
+                        // onModeChange={(anno) => this.onAnnoModeChange(anno)}
+                        showSingleAnno={this.state.showSingleAnno}
+                        uiConfig={this.props.uiConfig}
+                        allowedActions={this.props.canvasConfig.actions}
+                        possibleLabels={this.props.possibleLabels}
                     />
             })
             return <g>{annos}</g>
-            // }
-
         } else {
             return null
         }
@@ -521,17 +889,38 @@ class Canvas extends Component{
     }
 
     render(){
-        // if (!this.props.container) return null
+        console.log('Canvas render state, props', this.state, this.props)
+        const selectedAnno = this.findAnno(this.state.selectedAnnoId)
         return(
             <div ref={this.container} >
             <div height={this.state.svg.height} 
             style={{position: 'fixed', top: this.state.svg.top, left: this.state.svg.left}}
             >
+            <ImgBar container={this.container} 
+                visible={this.props.imgBarVisible}
+                possibleLabels={this.props.possibleLabels}
+                annos={this.props.annos}
+                svg={this.state.svg}
+                onClose={() => this.handleImgBarClose()}
+                onLabelUpdate={label => this.handleImgLabelUpdate(label)}
+                imgLabelIds={this.state.imgLabelIds}
+                multilabels={this.props.canvasConfig.multilabels}
+            />
+            <Dimmer active={!this.state.imageLoaded}><Loader>Loading</Loader></Dimmer>
+
                 {/* <div style={{position: 'fixed', top: this.props.container.top, left: this.props.container.left}}> */}
                 <AnnoLabelInput svg={this.state.svg} 
                     // svgRef={this.svg}
                     onClose={() => this.onAnnoLabelInputClose()}
-                    onDeleteClick={annoId => this.onLabelInputDeleteClick(annoId)}/>
+                    onDeleteClick={annoId => this.onLabelInputDeleteClick(annoId)}
+                    selectedAnno={selectedAnno}
+                    visible={this.state.showLabelInput}
+                    onLabelUpdate={anno => this.onAnnoLabelInputUpdate(anno)}
+                    possibleLabels={this.props.possibleLabels}
+                    allowedActions={this.props.canvasConfig.actions}
+                    multilabels={this.props.canvasConfig.multilabels}
+                    // multilabels={true}
+                    />
                 <svg ref={this.svg} width={this.state.svg.width} 
                     height={this.state.svg.height}
                     onKeyDown={e => this.onKeyDown(e)}
@@ -541,7 +930,6 @@ class Canvas extends Component{
                     <g 
                         transform={`scale(${this.state.svg.scale}) translate(${this.state.svg.translateX}, ${this.state.svg.translateY})`}
                         onMouseOver={() => {this.onMouseOver()}}
-                        onMouseOut={() => {this.onMouseOut()}}
                         onMouseUp={(e) => {this.onMouseUp(e)}}
                         onWheel={(e) => {this.onWheel(e)}}
                         onMouseMove={(e) => {this.onMouseMove(e)}}
@@ -549,14 +937,14 @@ class Canvas extends Component{
                         <image
                             onContextMenu={(e) => this.onRightClick(e)}
                             onMouseDown={(e) => this.onMouseDown(e)}
-                            href={this.state.image.data} 
+                            href={this.props.image.data} 
                             width={this.state.svg.width} 
                             height={this.state.svg.height}
                         />
                         {this.renderAnnotations()}
                     </g>
                 </svg>
-                <img style={{display:'none'}} ref={this.img} onLoad={() => {this.onImageLoad()}} src={this.state.image.data} width="100%" height="100%"></img>
+                <img style={{display:'none'}} ref={this.img} onLoad={() => {this.onImageLoad()}} src={this.state.imageData} width="100%" height="100%"></img>
                 {/* </div> */}
                 </div>
                 {/* Placeholder for Layout*/}
@@ -565,31 +953,4 @@ class Canvas extends Component{
     }
 }
 
-
-
-
-function mapStateToProps(state) {
-    return ({
-        annos: state.sia.annos,
-        selectedAnno: state.sia.selectedAnno,
-        selectedTool: state.sia.selectedTool,
-        getNextImage: state.sia.getNextImage,
-        getPrevImage: state.sia.getPrevImage,
-        imageLoaded: state.sia.imageLoaded,
-        appliedFullscreen: state.sia.appliedFullscreen,
-        requestAnnoUpdate: state.sia.requestAnnoUpdate,
-        uiConfig: state.sia.uiConfig,
-        layoutUpdate: state.sia.layoutUpdate,
-        taskFinished: state.sia.taskFinished
-        // workingOnAnnoTask: state.annoTask.workingOnAnnoTask,
-    })
-}
-
-export default connect(mapStateToProps, 
-    {
-        getSiaAnnos, getSiaImage, siaKeyDown, 
-        siaKeyUp, selectAnnotation, getSiaLabels,
-        siaUpdateAnnos, siaSetImageLoaded, siaUpdateReduxAnnos,
-        siaSetSVG, getSiaConfig, siaSendFinishToBackend
-    }
-)(Canvas)
+export default Canvas

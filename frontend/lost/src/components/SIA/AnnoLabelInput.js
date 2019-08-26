@@ -1,17 +1,8 @@
 import React, {Component} from 'react'
-import {connect} from 'react-redux'
-import { Dropdown, Ref, Popup, Header} from 'semantic-ui-react'
-
 import LabelInput from './LabelInput'
-
-import actions from '../../actions'
 import * as transform from './utils/transform'
-import * as annoStatus from './types/annoStatus'
 import * as constraints from './utils/constraints'
-
-const {siaShowLabelInput, siaShowSingleAnno, selectAnnotation,
-siaKeyDown} = actions
-
+import * as annoStatus from './types/annoStatus'
 
 class AnnoLabelInput extends Component{
 
@@ -32,7 +23,7 @@ class AnnoLabelInput extends Component{
     }
     
     componentDidUpdate(prevProps){
-        if (this.props.showLabelInput){
+        if (this.props.visible){
             console.log('ShowLabelInput')
             this.setPosition()
         } 
@@ -40,12 +31,11 @@ class AnnoLabelInput extends Component{
         
     }
 
-
     /*************
      * LOGIC     *
      *************/
     setPosition(){
-        if (this.props.selectedAnno.id){
+        if (this.props.selectedAnno){
             const center = transform.getCenter(this.props.selectedAnno.data, this.props.selectedAnno.type)
             // const annoBox = transform.getBox(this.props.selectedAnno.anno, this.props.selectedAnno.type)
             const inputRect = this.inputGroupRef.current.getBoundingClientRect()
@@ -66,28 +56,47 @@ class AnnoLabelInput extends Component{
         }
     }
 
-
-
     onClose(){
         if (this.props.onClose){
             this.props.onClose()
         }
+    }
+    
+    annoLabelUpdate(anno){
+        if (this.props.onLabelUpdate){
+            this.props.onLabelUpdate(anno)
+        }
+    }
+
+    updateAnnoLabel(label){
+        if (!constraints.allowedToLabel(
+            this.props.allowedActions, this.props.selectedAnno)) return
+        console.log('LabelInput confirmLabel label', label)
+        this.annoLabelUpdate({
+            ...this.props.selectedAnno,
+            labelIds: label,
+            status: this.props.selectedAnno.status !== annoStatus.NEW ? annoStatus.CHANGED : annoStatus.NEW
+        })
     }
 
 
     /*************
      * RENDERING *
     **************/
-
-
-
-
     render(){
+        if (!this.props.visible) return null
         return (
             <div ref={this.inputGroupRef} style={{position:'fixed', top:this.state.top, left:this.state.left}}>
                 <LabelInput svg={this.props.svg}
-                    // svgRef={this.props.svgRef}
                     onClose={() => this.onClose()}
+                    initLabelIds={this.props.selectedAnno.labelIds}
+                    relatedId={this.props.selectedAnno.id}
+                    visible={this.props.visible}
+                    onLabelUpdate={label => this.updateAnnoLabel(label)}
+                    possibleLabels={this.props.possibleLabels}
+                    multilabels={this.props.multilabels}
+                    renderPopup
+                    focusOnRender
                     />
             </div>
         )
@@ -95,19 +104,4 @@ class AnnoLabelInput extends Component{
     
 }
 
-function mapStateToProps(state) {
-    return ({
-        selectedAnno: state.sia.selectedAnno,
-        showLabelInput: state.sia.showLabelInput,
-        canvasKeyDown: state.sia.keyDown,
-        possibleLabels: state.sia.possibleLabels,
-        allowedActions: state.sia.config.actions,
-        svg: state.sia.svg
-    })
-}
-
-export default connect(
-    mapStateToProps, 
-    {siaShowLabelInput, siaShowSingleAnno, selectAnnotation, siaKeyDown}
-    ,null,
-    {forwardRef:true})(AnnoLabelInput)
+export default AnnoLabelInput
