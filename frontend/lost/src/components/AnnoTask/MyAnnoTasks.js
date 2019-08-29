@@ -38,6 +38,7 @@ class MyAnnoTasks extends Component {
         this.openModal = this.openModal.bind(this);
         this.afterOpenModal = this.afterOpenModal.bind(this);
         this.closeModal = this.closeModal.bind(this);
+        this.redirectSiaReview = this.redirectSiaReview.bind(this);
     }
 
     openModal() {
@@ -63,6 +64,16 @@ class MyAnnoTasks extends Component {
         this.props.getAnnoTaskStatistic(annoTask.id)
   
         this.openModal()
+    }
+    handleReviewClick(annoTask)
+    {
+        this.redirectSiaReview(annoTask);
+    }
+    redirectSiaReview(annoTask)
+    {
+        console.log("testt")
+        this.props.history.push({pathname:'/siareview'
+                                } )
     }
     renderStatisticModal(){
         return(
@@ -176,6 +187,9 @@ class MyAnnoTasks extends Component {
                             <td>
                                 <Button onClick={()=>this.handleStatisticsClick(annoTask)} color={progress>0 ?'info':''}disabled={progress>0 ?false:true}><span className='icon-chart'>&nbsp;</span>Statistic</Button>
                             </td>
+                            <td>
+                                <Button onClick={()=>this.handleReviewClick(annoTask)} color={progress>0?'info':''}>Review</Button>
+                            </td>
                         </tr>
                     )
                 })}
@@ -198,6 +212,7 @@ class MyAnnoTasks extends Component {
                             <th className='text-center'>Annotation Type</th>
                             <th className='text-center'>Activity</th>
                             <th className='text-center'>Statistics</th>
+                            <th className='text-center'>Review</th>
                         </tr>
                     </thead>
                     {this.renderTableBody()}
