@@ -72,7 +72,10 @@ class MyAnnoTasks extends Component {
     redirectSiaReview(annoTask)
     {
         console.log("testt")
-        this.props.history.push({pathname:'/siareview'
+        console.log(annoTask)
+        this.props.history.push({
+       pathname:'/siareview',
+       state:{annoTask:annoTask}
                                 } )
     }
     renderStatisticModal(){
