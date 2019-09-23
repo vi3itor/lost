@@ -14,13 +14,14 @@ class ImageSearch extends Component {
         console.log(props)
         this.state = {
             tags: [],
-            suggestions: this.props.listOfPossibleFilters.listOfPossibleLabels,
-            suggestionsUname:this.props.listOfPossibleFilters.listOfALLUserInTask,
+            suggestions: this.props.filter.listOfPossibleLabels,
+            suggestionsUnames:this.props.filter.listOfALLUserInTask,
             IdtoLabel: null,
             Usernames: [],
             IdtoUsername:null
             
         };
+        
         this.PressEnter = this.PressEnter.bind(this)
         this.BadgeonDelete = this.BadgeonDelete.bind(this)
         this.CallbackBadgesLabels = this.CallbackBadgesLabels.bind(this)
@@ -33,9 +34,11 @@ class ImageSearch extends Component {
         this.props.getSiaReviewFilterOptions()
         let idtolabel = new Map()
         let idtoUname = new Map()
+       console.log("HALOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO",this.props)
+        
         this.state.suggestions.forEach((data) =>
         {
-            console.log(data)
+            console.log("_______________________________________hallooooooooooooooooooo",data)
             
             if(!idtolabel.get(data.id))
             {
@@ -43,16 +46,21 @@ class ImageSearch extends Component {
             }
             
         })
+    
         this.setState({IdtoLabel:idtolabel})
-        this.state.suggestionsUname.forEach((data)=>
+          
+        this.state.suggestionsUnames.forEach((data)=>
         {
             if(!idtoUname.get(data.id))
             {
                 idtoUname.set(data.id,data.label)
             }
         })
+    
         this.setState({IdtoUsername:idtoUname})
+    
     }
+   
     PressEnter(e) {
         if (e.keyCode == 13) {
             let taglist = this.state.tags
@@ -83,6 +91,15 @@ class ImageSearch extends Component {
         taglist.splice(parseInt(e.target.id), 1)
         this.setState({ tags: taglist })
     }
+    nextImage = ()=>
+    {
+        console.log("testetst")
+        this.props.parentCallback()
+    }
+    prevImage = ()=>
+    {
+        this.props.prevImage()
+    }
     render() {
         const badge = this.state.tags.map((name, index) => {
             return <Badge color="info">{this.state.IdtoLabel.get(name)}<Button onClick={this.BadgeonDelete}>x</Button></Badge>
@@ -102,7 +119,7 @@ class ImageSearch extends Component {
                     <Row>
                         <Col xs='12'>
                             <h1>Image/Label Search</h1>
-                            Pipeline: {this.props.annoTask.pipelineName}
+                            Pipeline: {this.props.annoId}
                         </Col>
                         <Col xs="12">
                             <FormGroup row>
@@ -124,7 +141,7 @@ class ImageSearch extends Component {
                                            // relatedId={this.props.annos.image.id}
                                             visible={true}
                                             //onLabelUpdate={label => this.handleLabelUpdate(label)}
-                                            possibleLabels={this.props.listOfPossibleFilters.listOfPossibleLabels}
+                                            possibleLabels={this.props.listOfPossibleFilters.listOfPossibleLabels?this.props.listOfPossibleFilters.listOfPossibleLabels:[]}
                                             parentcallback={this.CallbackBadgesLabels}
                                             //initLabelIds={this.props.imgLabelIds}
                                          //   relatedId={this.props.annos.image.id}
@@ -138,7 +155,7 @@ class ImageSearch extends Component {
                                            // relatedId={this.props.annos.image.id}
                                             visible={true}
                                             //onLabelUpdate={label => this.handleLabelUpdate(label)}
-                                            possibleLabels={this.props.listOfPossibleFilters.listOfALLUserInTask}
+                                            possibleLabels={this.props.listOfPossibleFilters.listOfALLUserInTask?this.props.listOfPossibleFilters.listOfALLUserInTask:[]}
                                             parentcallback={this.CallbackBadgesUnames}
                                             //initLabelIds={this.props.imgLabelIds}
                                          //   relatedId={this.props.annos.image.id}
@@ -148,16 +165,19 @@ class ImageSearch extends Component {
 
                                     <Input sm="2" type="text" name="Iname"></Input>
                                     <Col sm={{ size: "2" }}>
-                                        <Button icon labelPosition='left'>
+                                        <Button icon labelPosition='left' onClick={this.prevImage}>
                                             Prev
                                         <Icon name='left arrow' />
                                         </Button>
-                                        <Button icon labelPosition='right'>
+                                        <Button icon labelPosition='right' onClick={this.nextImage}>
                                             Next
                                         <Icon name='right arrow' />
                                         </Button>
                                     </Col>
                                 </FormGroup>
+                            </Col>
+                            <Col sm={{size:"3",offset:5}}>
+                            <Button>Search</Button>
                             </Col>
                         </Col>
                     </Row>

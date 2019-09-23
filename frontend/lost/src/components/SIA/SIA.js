@@ -122,6 +122,7 @@ class SIA extends Component {
                     // ...this.state.image, 
                     id: this.props.annos.image.id, 
                     data:window.URL.createObjectURL(response)
+                    
                 }})
             }
         )       
@@ -153,24 +154,27 @@ class SIA extends Component {
 
     render() {
         console.log('Sia renders', this.state.image)
+        console.log("____________________LABELS", this.props.possibleLabels,"____________________Annos",this.props.annos)
         return (
             <div className={this.state.fullscreenCSS} ref={this.container}>
                 <Canvas
                     ref={this.canvas} 
-                    imgBarVisible={this.props.imgBar.show}
+                   // imgBarVisible={this.props.imgBar.show}
                     container={this.container}
                     annos={this.props.annos}
                     image={this.state.image}
                     uiConfig={this.props.uiConfig}
+                    // Wichtig für ansicht update
                     layoutUpdate={this.props.layoutUpdate}
                     selectedTool={this.props.selectedTool}
                     canvasConfig={this.props.canvasConfig}
                     possibleLabels={this.props.possibleLabels}
-                    onSVGUpdate={svg => this.props.siaSetSVG(svg)}
+                    
+                    //onSVGUpdate={svg => this.props.siaSetSVG(svg)}
                     // onImageLoaded={() => this.handleCanvasImageLoaded()}
-                    onAnnoSelect={anno => this.props.selectAnnotation(anno)}
-                    onImgBarClose={() => this.handleImgBarClose()}
-                    layoutOffset={this.state.layoutOffset}
+                    //onAnnoSelect={anno => this.props.selectAnnotation(anno)}
+                    //onImgBarClose={() => this.handleImgBarClose()}
+                    //layoutOffset={this.state.layoutOffset}
                 />
                 <ToolBar container={this.container}></ToolBar>
                 <InfoBoxArea container={this.container}></InfoBoxArea>

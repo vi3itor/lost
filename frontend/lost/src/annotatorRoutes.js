@@ -35,7 +35,7 @@ const routes = [
   { path: '/sia', name: 'Single Image Annotation', component: SingleImageAnnotation },
   { path: '/mia', name: 'Multi Image Annotation', component: MultiImageAnnotation },
   { path: '/profile', name: 'My Profile', component: Profile },
-  { path: '/siareview', name: 'SIA Review', component: SiaReview },
+  { path: '/siareview:handle', name: 'SIA Review', component: SiaReview },
   //{ path: '/users/:id', exact: true, name: 'User Details', component: User },
 ]
 

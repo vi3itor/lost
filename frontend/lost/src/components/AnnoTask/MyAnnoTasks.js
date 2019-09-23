@@ -74,7 +74,7 @@ class MyAnnoTasks extends Component {
         console.log("testt")
         console.log(annoTask)
         this.props.history.push({
-       pathname:'/siareview',
+       pathname:'/siareview&'+annoTask.id,
        state:{annoTask:annoTask}
                                 } )
     }

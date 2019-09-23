@@ -53,6 +53,7 @@ class AnnoBar extends Component{
             this.props.anno.labelIds.forEach((lbl, idx) => {
                 labelObject = this.props.possibleLabels.find(el => {
                     return el.id === lbl
+                    
                 })
                 if (idx > 0) label += ', '
                 label += labelObject.label

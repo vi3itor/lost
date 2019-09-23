@@ -121,6 +121,7 @@ class Canvas extends Component{
         // if (this.props.image.id !== prevProps.image.id){
             
         // }
+        console.log("Wichtige Canvas props:",this.props)
         if (prevProps.annos !== this.props.annos){
             this.setState({imgLabelIds: this.props.annos.image.labelIds})
             this.setState({
@@ -155,6 +156,7 @@ class Canvas extends Component{
             // Selected annotation should be on top
             this.putSelectedOnTop(prevState)
             if (prevState.imageLoaded !== this.state.imageLoaded){
+                console.log("__________________________________________Canvastest",this.props.annos)
                 this.updateCanvasView(this.props.annos.annotations)
                 this.setImageLabels(this.props.annos.image.labelIds)
                 this.setState({

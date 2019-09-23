@@ -1,6 +1,7 @@
 import TYPES from '../types/index'
 const INITIAL_STATE = {
-    listOfPossibleFilters:[]
+    listOfPossibleFilters:[],
+    listOfAnnos:[]
     
 }
 
@@ -10,6 +11,11 @@ export default function (state = INITIAL_STATE, action) {
             return {
                 ...state,
                 listOfPossibleFilters: action.payload
+            }
+        case TYPES.GET_SIAREVIEW_ANNOS:
+            return{
+                ...state,
+                listOfAnnos: action.payload
             }
             default:
             return state
