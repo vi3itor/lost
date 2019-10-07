@@ -122,15 +122,19 @@ def get_label_trees(db_man, user_id):
         label_trees['labels'] = list()
         return label_trees
         
-def get_configuration(db_man, user_id):
-    at = get_sia_anno_task(db_man,user_id)
-    print('anno task', at, at.idx)
-    print('anno task config', at.configuration)
+def get_configuration(db_man, user_id, annotask_id=None):
+    if not annotask_id:
+        at = get_sia_anno_task(db_man,user_id)
+    else:
+        at = get_sia_anno_task(db_man, user_id, annotask_id)
     return json.loads(at.configuration)
-def get_sia_anno_task(db_man, user_id): 
-    for cat in db_man.get_choosen_annotask(user_id):
-        if cat.anno_task.dtype == dtype.AnnoTask.SIA:
-            return cat.anno_task
+def get_sia_anno_task(db_man, user_id, annotask_id=None): 
+    if not annotask_id:
+        for cat in db_man.get_choosen_annotask(user_id):
+            if cat.anno_task.dtype == dtype.AnnoTask.SIA:
+                return cat.anno_task
+    else:
+        return db_man.get_anno_task(anno_task_id=annotask_id)
     return None
 def get_image_progress(db_man, anno_task, img_id):
     pipe_element=db_man.get_pipe_element(pipe_e_id=anno_task.pipe_element_id)
