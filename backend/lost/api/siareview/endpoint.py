@@ -29,3 +29,80 @@ class Configuration(Resource):
             print ('Anno task config in endpoint', re)
             dbm.close_session()
             return re
+
+################################################# TODO #############################################################
+@namespace.route('/update')
+class Update(Resource):
+    @jwt_required 
+    def post(self):
+        dbm = access.DBMan(LOST_CONFIG)
+        identity = get_jwt_identity()
+        user = dbm.get_user_by_id(identity)
+        if not user.has_role(roles.ANNOTATOR):
+            dbm.close_session()
+            return "You need to be {} in order to perform this request.".format(roles.ANNOTATOR), 401
+
+        else:
+            data = json.loads(request.data)
+            re = sia.update(dbm, data, user.idx)
+            dbm.close_session()
+            return re
+
+
+################################################# TODO #############################################################
+@namespace.route('/anno/<int:anno_id>')
+@namespace.param('anno_id', 'The id of the annotated image.')
+class Anno(Resource):
+    @api.marshal_with(sia_anno)
+    @jwt_required 
+    def get(self, anno_id):
+        dbm = access.DBMan(LOST_CONFIG)
+        identity = get_jwt_identity()
+        user = dbm.get_user_by_id(identity)
+        if not user.has_role(roles.ANNOTATOR):
+            dbm.close_session()
+            return "You need to be {} in order to perform this request.".format(roles.ANNOTATOR), 401
+
+        else:
+            last_img_id = int(anno_id)
+            re = sia.get_next(dbm, identity,last_img_id, DATA_URL)
+            dbm.close_session()
+            return re
+
+################################################# TODO #############################################################
+@namespace.route('/filteroptions/<int:annotask_id>')
+@namespace.param('annotask_id', 'The id of the Annotation Task.')
+class FilterOptions(Resource):
+    @jwt_required 
+    def get(self, annotask_id):
+        dbm = access.DBMan(LOST_CONFIG)
+        identity = get_jwt_identity()
+        user = dbm.get_user_by_id(identity)
+        if not user.has_role(roles.ANNOTATOR):
+            dbm.close_session()
+            return "You need to be {} in order to perform this request.".format(roles.ANNOTATOR), 401
+
+        else:
+            last_img_id = int(anno_id)
+            re = sia.get_next(dbm, identity,last_img_id, DATA_URL)
+            dbm.close_session()
+            return re
+
+################################################# TODO #############################################################
+@namespace.route('/filter')
+class Filter(Resource):
+    @jwt_required 
+    def post(self):
+        dbm = access.DBMan(LOST_CONFIG)
+        identity = get_jwt_identity()
+        user = dbm.get_user_by_id(identity)
+        if not user.has_role(roles.ANNOTATOR):
+            dbm.close_session()
+            return "You need to be {} in order to perform this request.".format(roles.ANNOTATOR), 401
+
+        else:
+            data = json.loads(request.data)
+            # re = sia.get_filtered_annos(dbm, data, user.idx)
+            # dbm.close_session()
+            # return re
+            pass
