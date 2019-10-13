@@ -78,6 +78,7 @@ export const siaKeyDown = (key) => {
 }
 
 export const siaSetUIConfig = (config) => {
+    localStorage.setItem('sia-ui-config', JSON.stringify(config))
     return {
         type: TYPES.SIA_SET_UICONFIG,
         payload: {
@@ -161,9 +162,9 @@ export const siaLayoutUpdate = (annos) => {
     }
 }
 
-export const siaShowImgBar = (show) => {
+export const siaShowImgLabelInput = (show) => {
     return {
-        type: TYPES.SIA_IMGBAR_SHOW,
+        type: TYPES.SIA_IMGLABELINPUT_SHOW,
         payload: show
     }
 }
@@ -181,5 +182,17 @@ export const siaSetSVG = (svg) => {
 export const siaSetTaskFinished = () => {
     return {
         type: TYPES.SIA_TASK_FINISHED,
+    }
+}
+
+/**
+ * Mark image as junk
+ * 
+ * @param {bool} junk - Junk or not.
+ */
+export const siaImgIsJunk = (junk) => {
+    return {
+        type: TYPES.SIA_IMG_JUNK,
+        payload: junk
     }
 }

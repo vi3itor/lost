@@ -9,7 +9,9 @@ image = api.model('Image', {
     'amount': fields.Integer(readOnly=True, description='Number of total images in that annotation task.'),
     'isFirst': fields.Boolean(readOnly=True, description='Weather the image is the first one of the annotation process.'),
     'isLast': fields.Boolean(readOnly=True, description='Weather the image is the last one of the annotation process.'),
+    'isLast': fields.Boolean(readOnly=True, description='Weather the image is the last one of the annotation process.'),
     'labelIds': fields.List(fields.Integer(readOnly=True, description='Label id.'), description='All label ids which belongs to this image.'),
+    'isJunk': fields.Boolean(readOnly=True, description='Indicates if the image was marked as Junk.'),
 })
 
 bbox_data = api.model('BBox Data',{
@@ -69,33 +71,34 @@ sia_config_tools = api.model('SIA Config Tools', {
     'point': fields.Boolean(readOnly=True, description='Weather to work with points.'),
     'line': fields.Boolean(readOnly=True, description='Weather to work with lines.'),
     'polygon': fields.Boolean(readOnly=True, description='Weather to work with polygons.'),
-    'bbox': fields.Boolean(readOnly=True, description='Weather to work with bboxes.')
+    'bbox': fields.Boolean(readOnly=True, description='Weather to work with bboxes.'),
+    'junk': fields.Boolean(readOnly=True, description='Indicates wether a junk button is visible.')
 })
 
-sia_config_actions_edit = api.model('SIA Config Actions edit',{
-    'label': fields.Boolean(readOnly=True, description="Weather to allow to edit the label."),
-    'bounds': fields.Boolean(readOnly=True, description="Weather to allow to edit the bounds."),
-    'delete': fields.Boolean(readOnly=True, description="Weather to allow to delete.")
+sia_config_annos_actions = api.model('SIA Config Anno Actions', {
+    'draw': fields.Boolean(readOnly=True, description='Indicates if an annotator is allowed to draw new 2d annotations.'),
+    'label': fields.Boolean(readOnly=True, description='Indicates if an annotator may assign a label to a 2d annotation.'),
+    'edit': fields.Boolean(readOnly=True, description='An annotator may edit a 2d annotation in size or shape.'),
 })
-sia_config_actions = api.model('SIA Config Actions', {
-    'drawing': fields.Boolean(readOnly=True, description='Weather to work with points.'),
-    'labeling': fields.Boolean(readOnly=True, description='Weather to work with lines.'),
-    'edit': fields.Nested(sia_config_actions_edit)
+sia_config_annos = api.model('SIA Config Annos', {
+    'minArea': fields.Integer(readOnly=True, description='Minimum area that is allowed for a 2d annotation.'),
+    'multilabels': fields.Boolean(readOnly=True, description='Multiple labels may be assigned per 2d annotation.'),
+    'actions': fields.Nested(sia_config_annos_actions)
 })
 
-# sia_config_annotations_bbox = api.model('SIA Config BBox annotations.',{
-#     'minArea': fields.Float(readOnly=True, description='Minimal area of a bbox.'),
-#     'minAreaType': fields.String(readOnly=True, description='Can be "rel" (relative) and "abs" (absolut)')
-# })
+sia_config_img_actions = api.model('SIA Config Image Actions', {
+    'label': fields.Boolean(readOnly=True, description='Indicates if an annotator may assign a label to the image'),
+})
 
-# sia_config_annotations = api.model('SIA Config annotations', {
-#     'bbox': fields.Nested(sia_config_annotations_bbox)
-# })
+sia_config_img = api.model('SIA Config Annos', {
+    'multilabels': fields.Boolean(readOnly=True, description='Multiple labels may be assigned for the image'),
+    'actions': fields.Nested(sia_config_img_actions)
+})
 
 sia_config = api.model('SIA Configuration', {
     'tools': fields.Nested(sia_config_tools,description='Tools to work with in SIA.'),
-    'actions': fields.Nested(sia_config_actions, description="Actions which are allowed."),
-    'multilabels': fields.Boolean(description='Indicates wether multiple labels per annotation or image are allowed')
+    'annos': fields.Nested(sia_config_annos, description="Config for 2d annotations."),
+    'img': fields.Nested(sia_config_img, description="Config for the image"),
 })
 
 sia_update_bbox = api.model('SIA update bbox', {
@@ -136,5 +139,6 @@ sia_update = api.model('SIA Update',{
     'imgId': fields.Integer(required=True, description='Id of image annotation.'),
     'annotations': fields.Nested(sia_update_annotations, required=True, description='All annotations which should be updated.'),
     'imgLabelIds': fields.List(fields.Integer(description='A list of label ids for the image'), required=True),
-    'imgLabelChanged': fields.Boolean(description='Indicates of the labels for the image have been changed by the annotator', required=True)
+    'imgLabelChanged': fields.Boolean(description='Indicates of the labels for the image have been changed by the annotator', required=True),
+    'isJunk': fields.Boolean(description='Indicates wether the image was marked as Junk by the annotator.', required=True)
 })

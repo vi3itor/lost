@@ -4,24 +4,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-### Added
--
 
+## [Unreleased] - 2019-09-19
+
+### Added
+- SIA: New features 
+  * Fullscreen mode
+  * New GUI design in order to enlarge the image canvas
+  * Assignment of image labels for captioning
+  * Mulit label support -> Assignment of multiple labels per annotation or image
+  * Full redo/ undo support
+  * Introduced info boxes to show additional information
+  * An annotator may mark an image as Junk if it should not be considered for annotation
+  * A minimum area for annotations can be defined.
+- Database: 
+  * Added description field to ImageAnno and TwoDAnno. This can be a description that can be added by an annotator or algorithm und was added for future features.
+  * Added new table(track) for track annotation, to prepare the database for the ISA (Image Sequence Annoation) tool.
 ### Changed
-- 
+- SIA: Complete rewrite in react.
+  * Config of SIA in pipeline definition files.
+- Database:
+  * In ImageAnno changed track_n -> track_id
 
 ### Deprecated
 - 
 
 ### Removed
--
+- SIA: In pipeline definition files config -> actions -> edit. It is not longer possible to allow/ deny actions when editing an annotation, since it was a feature that nobody used.
 
 ### Fixed
-- 
+- Cron: Set AnnoTask to finished if there no annotations in the current iteration
 
 ### Security
 - 
+
+## [0.0.6] - 2019-09-19
+### Added
+- GPU Worker lost-cv-gpu now contains the scikit-learn library
+
+### Fixed
+- Annotation context can now also be added to monochrome images  
+- Fixed typos in pipeline gui
+
 
 ## [0.0.5] - 2019-06-26
 ### Added

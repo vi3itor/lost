@@ -88,6 +88,42 @@ export function toBackend(data, image, type){
     }
 }
 
+/**
+ * Get area relative to the image 
+ * 
+ * @param {Array} data Annotation data
+ * @param {*} scaledImg The scaled image object {width, height}
+ * @param {String} type Type of the annotation bBox, point, line, polygon
+ * @param {object} originalImg The original image
+ * @returns Area relative
+ */
+export function getArea(data, scaledImg, type, originalImg){
+    const relData = toBackend(data, scaledImg, type)
+    switch(type) {
+        case 'bBox':
+            return Math.abs(relData.w*relData.h)* originalImg.width*originalImg.height
+            // return relData.w*relData.h
+        case 'line':        
+        case 'point':
+            return undefined
+        case 'polygon':
+            let area = 0.0;         // Accumulates area in the loop
+            if (relData.length >2){
+                let j = relData.length-1;  // The last vertex is the 'previous' one to the first
+            
+                for (let i=0; i<relData.length; i++)
+                { 
+                    area = area +  (relData[j].x+relData[i].x) * (relData[j].y-relData[i].y); 
+                    j = i;  //j is previous vertex to i
+                }
+            }
+            return Math.abs(area/2) * originalImg.width*originalImg.height
+        default:
+            console.warn("Wrong annotation type!")
+            return undefined
+    }
+}
+
 export function move(data, movementX, movementY){
     return data.map(e => {
         return {
@@ -148,4 +184,73 @@ export function getCenter(data, type){
             console.log("Wrong annotation type!")
         
     }
+}
+
+/**
+ * Get point that is closest to the left browser side.
+ * 
+ * @param {object} data list of points {x,y} 
+ * @returns {object} A list of point [{x,y}...]. Multiple points are
+ *  returned when multiple points have the same distance to the left side.
+ */
+export function getMonstLeftPoint(data){
+    let minX = Infinity
+    let minXList = []    
+    data.forEach(el => {
+        if (el.x < minX){
+            minX = el.x
+            minXList = []
+            minXList.push(el)
+        } else if (el.x === minX) {
+            minXList.push(el)
+        }
+    })
+    return minXList
+}
+
+/**
+ * Get point that is closest to the top of the browser.
+ * 
+ * @param {object} data list of points {x,y} 
+ * @returns {object} A list of point [{x,y}...]. Multiple points are
+ *  returned when multiple points have the same distance to the top.
+ */
+export function getTopPoint(data){
+    let minY = Infinity
+    let minYList = []    
+    data.forEach(el => {
+        if (el.y < minY){
+            minY = el.y
+            minYList = []
+            minYList.push(el)
+        } else if (el.y === minY) {
+            minYList.push(el)
+        }
+    })
+    return minYList
+}
+
+/**
+ * Check if all nodes of an annotation are within the image. If not,
+ * correct the annotation
+ * @param {object} data 
+ * @param {object} image 
+ */
+export function correctAnnotation(data, image){
+    const corrected = data.map(el => {
+            let x = el.x
+            let y = el.y
+            if (el.x <= 0){
+                x = 0
+            } else if (el.x > image.width){
+                x = image.width
+            }
+            if (el.y < 0){
+                y = 0
+            } else if (el.y > image.height){
+                y = image.height
+            }
+            return {x:x,y:y}
+        })
+    return corrected
 }

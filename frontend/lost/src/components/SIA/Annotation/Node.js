@@ -41,7 +41,7 @@ class Node extends Component{
     componentDidUpdate(prevProps){
         switch (this.props.mode){
             case modes.CREATE:
-                if (this.props.idx !== 0){
+                if (this.props.idx !== 0 || this.props.isPoint){
                     this.turnSelAreaOn()
                 }
                 break
@@ -171,6 +171,12 @@ class Node extends Component{
         }
     }
 
+    handleMouseLeave(e){
+        if (this.props.onMouseLeave){
+            this.props.onMouseLeave(e, this.props.idx)
+        }
+    }
+
 
     /*************
      * LOGIC     *
@@ -238,6 +244,7 @@ class Node extends Component{
                 onMouseUp={e => this.onMouseUp(e)}
                 onMouseDown={e => this.onMouseDown(e)}
                 onDoubleClick={e => this.onDoubleClick(e)}
+                onMouseLeave={e => this.handleMouseLeave(e)}
             >
                 <circle cx={data.x} cy={data.y} r={'100%'}
                     className={this.state.selAreaCss}

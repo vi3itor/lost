@@ -1,14 +1,18 @@
 import React, {Component} from 'react'
-import { Icon, Menu, Popup, Checkbox, Dimmer, Button, Header} from 'semantic-ui-react'
+import { Icon, Menu, Popup, Checkbox, Dimmer, Button, Card, Header, List, Segment} from 'semantic-ui-react'
 import {connect} from 'react-redux'
 import SIASettingButton from './SIASettingButton'
+import Prompt from './Prompt'
 
 import actions from '../../actions'
 import * as TOOLS from './types/tools'
+import * as siaIcons from './utils/siaIcons'
+
 const { 
     siaSelectTool, siaGetNextImage, siaGetPrevImage, 
     siaSetFullscreen, siaSetImageLoaded,
-    selectAnnotation, siaShowImgBar, siaSetTaskFinished,siaLayoutUpdate
+    selectAnnotation, siaShowImgLabelInput, siaSetTaskFinished,siaLayoutUpdate,
+    siaImgIsJunk
 } = actions
 
 class ToolBar extends Component{
@@ -19,12 +23,13 @@ class ToolBar extends Component{
             fullscreenMode: false,
             position: {
                 left: 0,
-                top: 0,
+                top: 5,
                 width: 40
             },
-            showFinishPrompt: false
+            showFinishPrompt: false,
+            showHelp: false
         }
-
+        this.toolBarGroup = React.createRef()
     }
 
     componentDidMount(){
@@ -36,21 +41,33 @@ class ToolBar extends Component{
         }
 
         if (this.props.layoutUpdate !== prevProps.layoutUpdate){
-            const container = this.props.container.current.getBoundingClientRect()
-            console.log('Toolbar container', container)
-            this.setState({
-                position: {...this.state.position,
-                left: 0,
-                top: container.top,
-                }
-            })
+            this.calcPosition()
         }
+        if (this.props.svg !== prevProps.svg){
+            this.calcPosition()
+        }
+
     }
 
     onClick(e, tool){
         this.props.siaSelectTool(tool)
     }
 
+    calcPosition(){
+        const tb = this.toolBarGroup.current.getBoundingClientRect()
+        if (tb){
+            if (this.props.svg){
+                let toolBarTop = undefined
+                toolBarTop = this.props.svg.top + (this.props.svg.height - tb.height)/2
+                this.setState({
+                    position: {...this.state.position,
+                    left: this.props.svg.left - 50,
+                    top: toolBarTop,
+                    }
+                })
+            }
+        }
+    }
     getNextImg(){
         // this.props.siaSetImageLoaded(false)
         // this.props.selectAnnotation(undefined)
@@ -84,16 +101,24 @@ class ToolBar extends Component{
         // this.props.siaSetFullscreen(!this.props.fullscreenMode)
     }
 
-    toggleImgBar(){
-        this.props.siaShowImgBar(!this.props.imgBar.show)
+    toggleImgLabelInput(){
+        this.props.siaShowImgLabelInput(!this.props.imgLabelInput.show)
     }
 
+    toggleJunk(){
+        this.props.siaImgIsJunk(!this.props.isJunk)
+    }
+
+    toggleHelp(){
+        this.setState({showHelp: !this.state.showHelp})
+    }
     renderPointIcon(){
         return (
             <svg version="1.1" xmlns="http://www.w3.org/2000/svg" 
                 // x="0px" y="0px"
                 // width="1190.549px" height="841.891px" 
                 viewBox="0 0 1190.549 841.891" 
+                width="17px"
             >
                 <path fill="currentColor" d="M748.197,408.286c0,151.355-122.699,274.058-274.059,274.058c-151.357,0-274.057-122.703-274.057-274.058
                     c0-151.356,122.7-274.057,274.057-274.057C625.497,134.229,748.197,256.929,748.197,408.286z"/>
@@ -107,6 +132,7 @@ class ToolBar extends Component{
                 // xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
                 // width="1190.549px" height="841.891px" 
                 viewBox="0 0 1190.549 841.891" 
+                width="17px"
                 // enable-background="new 0 0 1190.549 841.891"
                 // xml:space="preserve"
                 >
@@ -126,6 +152,7 @@ class ToolBar extends Component{
                 // xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
                 // width="1190.549px" height="841.891px" 
                 viewBox="0 0 1190.549 841.891" 
+                width="17px"
                 // enable-background="new 0 0 1190.549 841.891"
                 // xml:space="preserve"
                 >
@@ -142,6 +169,7 @@ class ToolBar extends Component{
                 // xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
                 // width="1190.549px" height="841.891px" 
                 viewBox="0 0 1190.549 841.891" 
+                width="17px"
                 // enable-background="new 0 0 1190.549 841.891"
                 // xml:space="preserve"
                 >
@@ -154,7 +182,7 @@ class ToolBar extends Component{
     }
 
     renderToolButtons(){
-        if (!this.props.allowedActions.drawing) return null
+        if (!this.props.allowedActions.draw) return null
         let btns = []
         if (this.props.allowedTools.point){
             btns.push(
@@ -219,23 +247,25 @@ class ToolBar extends Component{
 
     renderFinishPrompt(){
         return (
-            <Dimmer page active={this.state.showFinishPrompt}>
-                <Header as="h3" inverted>
+            <Prompt active={this.state.showFinishPrompt}
+                header={<div>
                     <Icon name='paper plane outline'></Icon>
                     Do you wish to FINISH this SIA Task?
-                </Header>
-                <Button basic color="green" inverted
-                    onClick={() => this.setFinished()}
-                >
-                    <Icon name='check'></Icon>
-                    Yes
-                </Button>
-                <Button basic color="red" inverted
-                    onClick={() => this.toggleFinishPrompt()}
-                >
-                    <Icon name='ban'></Icon> No
-                </Button>
-            </Dimmer>
+                </div>}
+                content={<div>
+                    <Button basic color="green" inverted
+                        onClick={() => this.setFinished()}
+                    >
+                        <Icon name='check'></Icon>
+                        Yes
+                    </Button>
+                    <Button basic color="red" inverted
+                        onClick={() => this.toggleFinishPrompt()}
+                    >
+                        <Icon name='ban'></Icon> No
+                    </Button>
+                </div>}
+            />
         )
     }
     /**
@@ -276,7 +306,7 @@ class ToolBar extends Component{
                     <Menu.Item name='arrow left' key='prev'
                         active={false} 
                         onClick={() => this.getPrevImg()}
-                        // disabled={true}
+                        disabled={this.props.currentImage.isFirst}
                     >
                         <Icon name='arrow left' />
                     </Menu.Item>
@@ -290,48 +320,92 @@ class ToolBar extends Component{
         return btns
     }
 
+    renderJunkButton(){
+        return <Menu.Item name='trash alternate outline' key='junk'
+            active={this.props.isJunk} 
+            onClick={() => this.toggleJunk()}
+        >
+            <Icon name='trash alternate outline' />
+        </Menu.Item>
+    }
+
+    renderHelpButton(){
+        return <Menu.Item name='help' key='help'
+            active={false} 
+            onClick={() => this.toggleHelp()}
+        >
+            <Icon name='help' />
+            <Prompt active={this.state.showHelp}
+                // header={<div><Icon name='help' /> Help</div>}
+                content={<div>
+                    <Card.Group>
+                    <Card>
+                        <Card.Content header='How to draw?' />
+                        <Card.Content description='1.) Select a Tool in the toolbar 2.) Draw with RIGHT CLICK on Canvas' />
+                    </Card>
+                    <Card>
+                        <Card.Content header='How to assign a label?' />
+                        <Card.Content description='1.) Select an annotation by LEFT CLICK 2.) Hit ENTER 3.) Type into the input field 4.) Hit ENTER to confirm 5.) Hit ESCAPE to close the input field'/>
+                    </Card>
+                    <Card>
+                        <Card.Content header='Undo/ Redo' />
+                        <Card.Content description='Undo: Hit STRG + Z'/>
+                        <Card.Content description='Redo: Hit STRG + R'/>
+                    </Card>
+                    <Card>
+                        <Card.Content header='Add a node to Line/Polygon' />
+                        <Card.Content description='Hit STRG + Click left on the line'/>
+                    </Card>
+                    <Card>
+                        <Card.Content header='Zoom/ Move Canvas' />
+                        <Card.Content description='Zoom: Use MOUSE WHEEL to zoom in/out'/>
+                        <Card.Content description='Move: Hold MOUSE WHEEL and move mouse'/>
+                    </Card>
+                    <Card>
+                        <Card.Content header='TAB navigation' />
+                        <Card.Content description='You can traverse all visible annotation by hitting TAB.'/>
+                    </Card>
+                    </Card.Group>
+                </div>}
+            />
+        </Menu.Item>
+    }
+
+    
+    renderImgLabelInput(){
+        if (this.props.canvasConfig.img.actions.label){
+            return <Menu.Item name='img label input' 
+                active={this.props.imgLabelInput.show} 
+                onClick={() => this.toggleImgLabelInput()}
+            >
+                {/* <Icon name='pencil' /> */}
+                {siaIcons.textIcon()}
+                
+            </Menu.Item>
+        }
+    }
 
     render(){
         console.log('Toobar state', this.state, this.props.currentImage)
         return(
-        // <Draggable handle=".handle">
-        <div style={{position:'fixed', top: this.state.position.top, left:this.state.position.left}}>
-                {/* <div className="handle" style={{cursor: 'grab'}}>Drag</div> */}
+        <div
+            ref={this.toolBarGroup}
+            style={{position:'fixed', top: this.state.position.top, left:this.state.position.left}}>
             <Menu icon inverted vertical>
-
-                <Menu.Item name='image' 
-                    active={this.props.imgBar.show} 
-                    onClick={() => this.toggleImgBar()}
-                >
-                    <Icon name='image' />
-                </Menu.Item>
-                {this.renderToolButtons()}
+                {this.renderImgLabelInput()}
                 {this.renderNavigation()}
+                {this.renderToolButtons()}
                 <Menu.Item name='expand arrows alternate' 
                     active={this.props.fullscreenMode} 
                     onClick={() => this.toggleFullscreen()}
                 >
                     <Icon name='expand arrows alternate' />
                 </Menu.Item>
+                {this.renderJunkButton()}
                 <SIASettingButton></SIASettingButton>
-               
-               
+                {this.renderHelpButton()}
             </Menu>
-                {/* <Card><CardBody>
-            <div style={{width:this.state.position.width}}>
-                <Button outline onClick={() => this.toggleImgBar()} color="primary" active={this.props.imgBar.show}>
-                    <FontAwesomeIcon icon={faImage} size='1x'/>
-                </Button>
-                {this.renderToolButtons()}
-                {this.renderNavigation()}
-                <Button outline onClick={() => this.toggleFullscreen()} color="secondary"
-                    active={this.props.fullscreenMode}>
-                    <FontAwesomeIcon icon={faExpandArrowsAlt} />
-                </Button>
-            </div>
-            </CardBody></Card> */}
         </div>
-        // </Draggable>
         )
     }
 }
@@ -343,15 +417,20 @@ function mapStateToProps(state) {
         annos: state.sia.annos,
         appliedFullscreen: state.sia.appliedFullscreen,
         layoutUpdate: state.sia.layoutUpdate,
-        imgBar: state.sia.imgBar,
+        imgLabelInput: state.sia.imgLabelInput,
         allowedTools: state.sia.config.tools,
-        allowedActions: state.sia.config.actions,
-        selectedTool: state.sia.selectedTool
+        allowedActions: state.sia.config.annos.actions,
+        selectedTool: state.sia.selectedTool,
+        isJunk: state.sia.isJunk,
+        canvasConfig: state.sia.config,
+        svg: state.sia.svg,
     })
 }
 export default connect(mapStateToProps, 
     {siaSelectTool, siaGetNextImage, siaGetPrevImage, 
         siaSetFullscreen, 
         // siaSetImageLoaded, 
-        selectAnnotation, siaShowImgBar, siaSetTaskFinished, siaLayoutUpdate}
+        selectAnnotation, siaShowImgLabelInput, siaSetTaskFinished, siaLayoutUpdate,
+        siaImgIsJunk
+    }
 )(ToolBar)

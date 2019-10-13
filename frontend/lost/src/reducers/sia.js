@@ -1,4 +1,7 @@
 import TYPES from '../types/index'
+
+import {uiConfig} from '../components/SIA/utils/uiConfig'
+
 const INITIAL_STATE = {
     annos: {},
     selectedAnno: {
@@ -8,16 +11,7 @@ const INITIAL_STATE = {
     },
     keyUp: undefined,
     keyDown: undefined,
-    uiConfig: {
-        nodeRadius: 4,
-        strokeWidth: 4,
-        annoDetails:{
-            visible: false
-        },
-        labelInfo:{
-            visible: false
-        }
-    },
+    uiConfig: uiConfig,
     showSingleAnno: undefined,
     selectedTool: undefined,
     showLabelInput: false,
@@ -29,8 +23,8 @@ const INITIAL_STATE = {
     requestAnnoUpdate: 0,
     appliedFullscreen: false,
     layoutUpdate: 0,
-    imgBar : {
-        show: true
+    imgLabelInput : {
+        show: false
     },
     svg : undefined,
     config : {
@@ -38,20 +32,27 @@ const INITIAL_STATE = {
             point: true,
             line: true,
             polygon: true,
-            bbox: true
+            bbox: true,
+            junk: true
         },
-        multilabels: true,
-        actions: {
-            drawing: true,
-            labeling: true,
-            edit: {
+        annos:{
+            multilabels: false,
+            actions: {
+                draw: true,
                 label: true,
-                bounds: true,
-                delete: true
+                edit: true,
+            },
+            minArea: 500
+        },
+        img: {
+            multilabels: false,
+            actions: {
+                label: true,
             }
         }
     },
-    taskFinished: 0
+    taskFinished: 0,
+    isJunk: false
 }
 
 export default function (state = INITIAL_STATE, action) {
@@ -160,11 +161,11 @@ export default function (state = INITIAL_STATE, action) {
                 ...state,
                 layoutUpdate: state.layoutUpdate + 1
             }
-        case TYPES.SIA_IMGBAR_SHOW:
+        case TYPES.SIA_IMGLABELINPUT_SHOW:
             return {
                 ...state,
-                imgBar: {
-                    ...state.imgBar,
+                imgLabelInput: {
+                    ...state.imgLabelInput,
                     show:action.payload
                 }
             }
@@ -179,6 +180,11 @@ export default function (state = INITIAL_STATE, action) {
             return {
                 ...state,
                 taskFinished: state.taskFinished + 1
+            }
+            case TYPES.SIA_IMG_JUNK:
+            return {
+                ...state,
+                isJunk: action.payload
             }
         default:
             return state

@@ -30,21 +30,14 @@ class SingleImageAnnotation extends Component {
 	render(){
 		console.log(this.props.annos)
 		return (
-			<Row >
+			<Row>
 				<Col>
-					<Card>
-						<CardHeader>
-							Single Image Annotation - Rewrite !
-						</CardHeader>
-						<CardBody >
-							<Row>
-								<Col xs='12'>
-									<WorkingOnSIA annoTask={this.props.workingOnAnnoTask}></WorkingOnSIA>
-									<SIA></SIA>
-								</Col>
-							</Row>
-						</CardBody> 
-					</Card>
+					<Row>
+						<Col xs='12'>
+							<WorkingOnSIA annoTask={this.props.workingOnAnnoTask}></WorkingOnSIA>
+							<SIA></SIA>
+						</Col>
+					</Row>
 				</Col>
 			</Row>
 		)

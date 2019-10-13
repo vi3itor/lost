@@ -11,6 +11,8 @@ import * as canvasActions from '../types/canvasActions'
 import * as annoStatus from '../types/annoStatus'
 import * as colorlut from '../utils/colorlut'
 import * as constraints from '../utils/constraints'
+import * as transform from '../utils/transform'
+import * as notificationType from '../types/notificationType'
 
 class Annotation extends Component{
 
@@ -94,6 +96,13 @@ class Annotation extends Component{
         }
     }
 
+
+    notify(messageObj){
+        if (this.props.onNotification){
+            this.props.onNotification(messageObj)
+        }
+    }
+
     /**
      * Handle a performed action from a specific annotation
      * 
@@ -104,7 +113,40 @@ class Annotation extends Component{
      *      was selected
      */
     performedAnnoAction(anno, pAction){
-        this.performedAction(anno, pAction)
+
+        switch(pAction){
+            case canvasActions.ANNO_CREATED_FINAL_NODE:
+            case canvasActions.ANNO_EDITED:
+            case canvasActions.ANNO_MOVED:
+            case canvasActions.ANNO_CREATED:
+                // Check if annoation is within image bounds
+                const corrected = transform.correctAnnotation(anno.data, this.props.svg)
+                let newAnno = {...anno, data: corrected}
+                const area = transform.getArea(corrected, this.props.svg, anno.type, this.props.image)
+                if (area!==undefined){
+                    if(area < this.props.canvasConfig.annos.minArea){
+                        this.notify({
+                            title: "Annotation to small",
+                            message: 'Annotation area was '+Math.round(area)+'px but needs to be bigger than '+ this.props.canvasConfig.annos.minArea+' px',
+                            type: notificationType.WARNING
+                        })
+                        // newAnno = {...newAnno, mode: modes.DELETED}
+                        this.setMode(newAnno, modes.DELETED)
+                    } else {
+                        this.performedAction(newAnno, pAction)
+                    }
+                } else {
+                    this.performedAction(newAnno, pAction)
+                }
+                console.log(
+                    'AnnotationArea', area
+                    , this.props.image
+                    )
+                break
+            default:
+                this.performedAction(anno, pAction)
+                break
+        }
     }
 
     setAnnoMode(anno, mode){
@@ -128,10 +170,10 @@ class Annotation extends Component{
                     }
                     break
                 case modes.DELETED:
-                    if(constraints.allowedToDelete(
-                        this.props.allowedActions,
-                        anno
-                    )){
+                    // if(constraints.allowedToDelete(
+                    //     this.props.allowedActions,
+                    //     anno
+                    // )){
                         this.setAnnoMode(anno, mode)
                         const newAnno = {
                             ...anno, 
@@ -141,11 +183,15 @@ class Annotation extends Component{
                             anno: newAnno
                         })
                         this.performedAction(newAnno, canvasActions.ANNO_DELETED)
-                    }
+                    // }
                     break
                 case modes.MOVE:
                     this.setAnnoMode(anno, mode)
                     this.performedAction(anno, canvasActions.ANNO_ENTER_MOVE_MODE)
+                    break
+                case modes.EDIT:
+                    this.setAnnoMode(anno, mode)
+                    this.performedAction(anno, canvasActions.ANNO_ENTER_EDIT_MODE)
                     break
                 default:
                     this.setAnnoMode(anno, mode)
@@ -167,7 +213,11 @@ class Annotation extends Component{
     }
 
     isSelected(){
-        return this.props.selectedAnno === this.props.data.id
+        if (constraints.allowedToEdit(this.props.allowedActions, this.state.anno)){
+            return this.props.selectedAnno === this.props.data.id
+        } else {
+            return false
+        }
     }
 
     getResult(){
@@ -177,15 +227,18 @@ class Annotation extends Component{
             createMode: this.myAnno.current.state.mode === modes.CREATE
         }
     }
-    
-    getStyle(){
-        let color
+
+    getColor(){
         if (this.state.anno.labelIds){
-            color = colorlut.getColor(this.state.anno.labelIds[0])
+            return colorlut.getColor(this.state.anno.labelIds[0])
         }
         else {
-            color = colorlut.getDefaultColor()
+            return colorlut.getDefaultColor()
         }
+    }
+
+    getStyle(){
+        const color = this.getColor()
         if (this.isSelected()){
             return {
                 stroke: color,
@@ -272,6 +325,8 @@ class Annotation extends Component{
             anno={this.state.anno} 
             mode={this.state.anno.mode}
             possibleLabels={this.props.possibleLabels}
+            onClick={e => this.onClick(e)}
+            style={this.getStyle()}
             />
     }
     render(){

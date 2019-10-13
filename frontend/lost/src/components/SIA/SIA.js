@@ -6,14 +6,18 @@ import 'semantic-ui-css/semantic.min.css'
 
 import Canvas from './Canvas'
 import ToolBar from './ToolBar'
+import {NotificationManager, NotificationContainer } from 'react-notifications'
 import { createHashHistory } from 'history'
 import InfoBoxArea from './InfoBoxes/InfoBoxArea'
+import 'react-notifications/lib/notifications.css';
+
+import * as notificationType from './types/notificationType'
 
 const { 
     siaAppliedFullscreen, siaLayoutUpdate, getSiaAnnos,
     getSiaLabels, getSiaConfig, siaSetSVG, getSiaImage, 
     siaSetImageLoaded, siaUpdateAnnos, siaSendFinishToBackend,
-    selectAnnotation, siaShowImgBar
+    selectAnnotation, siaShowImgLabelInput, siaImgIsJunk
 } = actions
 
 class SIA extends Component {
@@ -28,11 +32,12 @@ class SIA extends Component {
                 data: undefined,
             },
             layoutOffset: {
-                left: 0,
+                left: 20,
                 top: 0,
-                bottom: 10,
-                right: 0
-            }
+                bottom: 5,
+                right: 5
+            },
+            notification: undefined
         }
         this.siteHistory = createHashHistory()
         
@@ -47,6 +52,7 @@ class SIA extends Component {
         this.props.getSiaAnnos(-1)
         this.props.getSiaLabels()
         this.props.getSiaConfig()
+        // console.warn('We are not using real SIA config')
     }
     componentWillUnmount() {
         window.removeEventListener("resize", this.props.siaLayoutUpdate);
@@ -59,7 +65,41 @@ class SIA extends Component {
             // this.props.siaAppliedFullscreen(this.props.fullscreenMode)
             this.props.siaLayoutUpdate()
         }
-
+        if (prevState.notification !== this.state.notification){
+            const notifyTimeOut = 5000
+            if (this.state.notification){
+                switch(this.state.notification.type){
+                    case notificationType.WARNING:
+                        NotificationManager.warning(
+                            this.state.notification.message,
+                            this.state.notification.title,
+                            notifyTimeOut
+                        )
+                        break
+                    case notificationType.INFO:
+                        NotificationManager.info(
+                            this.state.notification.message,
+                            this.state.notification.title,
+                            notifyTimeOut
+                        )
+                        break
+                    case notificationType.ERROR:
+                        NotificationManager.error(
+                            this.state.notification.message,
+                            this.state.notification.title,
+                            notifyTimeOut
+                        )
+                        break
+                    case notificationType.SUCCESS:
+                        NotificationManager.success(
+                            this.state.notification.message,
+                            this.state.notification.title,
+                            notifyTimeOut
+                        )
+                        break
+                }
+            }
+        }
         if (prevProps.getNextImage !== this.props.getNextImage){
             if (this.props.getNextImage){
                 const newAnnos = this.canvas.current.getAnnos()
@@ -69,6 +109,7 @@ class SIA extends Component {
                     id: undefined, 
                     data:undefined
                 }})
+                this.props.siaImgIsJunk(false)
                 this.props.siaUpdateAnnos(newAnnos).then((r) => {
                     console.log('SIA REQUEST: Updated Annos', r)
                     this.props.getSiaAnnos(this.props.getNextImage)
@@ -85,11 +126,14 @@ class SIA extends Component {
                     id: undefined, 
                     data:undefined
                 }})
+                this.props.siaImgIsJunk(false)
                 this.props.siaUpdateAnnos(newAnnos).then(() => {
                     this.props.getSiaAnnos(this.props.getPrevImage, 'prev')
                 })
-                
             }
+        }
+        if (prevProps.annos !== this.props.annos){
+            this.props.siaImgIsJunk(this.props.annos.image.isJunk)
         }
         if (prevProps.taskFinished !== this.props.taskFinished){
             const newAnnos = this.canvas.current.getAnnos()
@@ -111,8 +155,19 @@ class SIA extends Component {
         }
     }
 
-    handleImgBarClose(){
-        this.props.siaShowImgBar(false)
+    // handleImgBarClose(){
+    //     this.props.siaShowImgBar(false)
+    // }
+
+    handleImgLabelInputClose(){
+        this.props.siaShowImgLabelInput(!this.props.imgLabelInput.show)
+    }
+
+    handleNotification(messageObj){
+        console.log('SIANotification', messageObj)
+        this.setState({
+            notification: messageObj
+        })
     }
 
     requestImageFromBackend(){
@@ -136,6 +191,7 @@ class SIA extends Component {
                     layoutOffset: {
                         ...this.state.layoutOffset,
                         left: 50,
+                        top: 5,
                     } 
                 })
             }
@@ -145,7 +201,8 @@ class SIA extends Component {
                     fullscreenCSS: '',
                     layoutOffset: {
                         ...this.state.layoutOffset,
-                        left: 0,
+                        left: 20,
+                        top: 0,
                     } 
                 })
             }
@@ -159,7 +216,8 @@ class SIA extends Component {
             <div className={this.state.fullscreenCSS} ref={this.container}>
                 <Canvas
                     ref={this.canvas} 
-                   // imgBarVisible={this.props.imgBar.show}
+                    imgBarVisible={true}
+                    imgLabelInputVisible={this.props.imgLabelInput.show}
                     container={this.container}
                     annos={this.props.annos}
                     image={this.state.image}
@@ -169,15 +227,17 @@ class SIA extends Component {
                     selectedTool={this.props.selectedTool}
                     canvasConfig={this.props.canvasConfig}
                     possibleLabels={this.props.possibleLabels}
-                    
-                    //onSVGUpdate={svg => this.props.siaSetSVG(svg)}
-                    // onImageLoaded={() => this.handleCanvasImageLoaded()}
-                    //onAnnoSelect={anno => this.props.selectAnnotation(anno)}
-                    //onImgBarClose={() => this.handleImgBarClose()}
-                    //layoutOffset={this.state.layoutOffset}
+                    onSVGUpdate={svg => this.props.siaSetSVG(svg)}
+                    onAnnoSelect={anno => this.props.selectAnnotation(anno)}
+                    layoutOffset={this.state.layoutOffset}
+                    isJunk={this.props.isJunk}
+                    onImgLabelInputClose={() => this.handleImgLabelInputClose()}
+                    centerCanvasInContainer={true}
+                    onNotification={(messageObj) => this.handleNotification(messageObj)}
                 />
-                <ToolBar container={this.container}></ToolBar>
+                <ToolBar></ToolBar>
                 <InfoBoxArea container={this.container}></InfoBoxArea>
+                <NotificationContainer/>
              </div>
         )
     }
@@ -199,8 +259,9 @@ function mapStateToProps(state) {
         requestAnnoUpdate: state.sia.requestAnnoUpdate,
         taskFinished: state.sia.taskFinished,
         possibleLabels: state.sia.possibleLabels,
-        imgBar: state.sia.imgBar,
-        canvasConfig: state.sia.config
+        imgLabelInput: state.sia.imgLabelInput,
+        canvasConfig: state.sia.config,
+        isJunk: state.sia.isJunk
     })
 }
 
@@ -211,7 +272,8 @@ export default connect(
         getSiaConfig, getSiaLabels, siaSetSVG, getSiaImage,
         siaUpdateAnnos, siaSendFinishToBackend,
         selectAnnotation,
-        siaShowImgBar
+        siaShowImgLabelInput,
+        siaImgIsJunk
     }
     , null,
     {})(SIA)

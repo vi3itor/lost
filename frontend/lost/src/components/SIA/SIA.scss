@@ -5,5 +5,9 @@
     z-index: 1021;
     width: 100%;
     height: 100%;
-    background-color: #073642;
+    background-color: #eee8d5;
 }
+
+body{
+    background-image: linear-gradient(to top, #eee8d5 60%, white 100%) !important;
+}  
