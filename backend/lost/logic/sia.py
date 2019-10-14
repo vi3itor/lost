@@ -100,11 +100,31 @@ def get_previous(db_man, user_id, img_id, media_url):
         return sia_serialize.serialize()
     else:
         return "nothing available"
-def get_label_trees(db_man, user_id):
-    """
+
+def get_review_anno(db_man, user_id, anno_id, media_url):
+    """ Get review image anno
     :type db_man: lost.db.access.DBMan
     """
     at = get_sia_anno_task(db_man, user_id)
+    iteration = db_man.get_pipe_element(pipe_e_id=at.pipe_element_id).iteration
+    image_anno = db_man.get_sia_review_anno(at.idx, user_id, anno_id, iteration)
+    if image_anno:
+        image_anno.timestamp_lock = datetime.now()
+        db_man.save_obj(image_anno)
+        current_image_number, total_image_amount = get_image_progress(db_man, at, image_anno.idx)
+        sia_serialize = SiaSerialize(image_anno, user_id, media_url, current_image_number, total_image_amount, is_first_image=False, is_last_image=False)
+        return sia_serialize.serialize()
+    else:
+        return "nothing available"
+
+def get_label_trees(db_man, user_id, annotask_id=None):
+    """
+    :type db_man: lost.db.access.DBMan
+    """
+    if annotask_id:
+        at = db_man.get_anno_task(anno_task_id=annotask_id)
+    else:
+        at = get_sia_anno_task(db_man, user_id)
     label_trees_json = dict()
     label_trees_json['labels'] = list()
     if at:
@@ -197,6 +217,29 @@ def junk(db_man, user_id, img_id):
     else:
         return "error: image_anno not found"
 
+def get_filter_options(db_man, user_id, annotask_id):
+    filteroptions = dict()
+    filteroptions['labels'] = get_label_trees(db_man, user_id, annotask_id)
+    working_users = []
+    at = db_man.get_anno_task(anno_task_id=annotask_id)
+    for user in at.group.users:
+        user_json = dict()
+        user['name'] = user.first_name + ' ' + user.last_name
+        user['id'] = user.idx
+        working_users.append(user_json)
+    filteroptions['users'] = working_users
+    return filteroptions
+
+def get_filtered_annos(db_man, data):
+    label_list = data['labels']
+    user_list = data['users']
+    image_name = data['imageName']
+    filtered_annos = db_man.get_sia_filtered_annos(label_list, user_list, image_name)
+    filtered_anno_ids = []
+    for anno in filtered_annos:
+        filtered_anno_ids.append(anno.idx)
+    return filtered_anno_ids
+    
 class SiaUpdate(object):
     def __init__(self, db_man, data, user_id):
         """

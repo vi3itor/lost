@@ -501,6 +501,30 @@ class DBMan(object):
         else:
             return None
 
+    def get_sia_review_anno(self, anno_task_id, user_id, anno_id, iteration):
+        ''' Get a specific image annotation by current annotation id
+        '''
+        sql = "SELECT * FROM image_anno WHERE iteration=%d AND anno_task_id=%d AND idx=%d"\
+         %(iteration, anno_task_id, anno_id)
+        img_anno = self.session.execute(sql).first()
+        if img_anno:
+            return self.session.query(model.ImageAnno).filter(model.ImageAnno.idx==img_anno.idx).first()
+        else:
+            return None
+
+    def get_sia_filtered_annos(self, label_list, user_list, image_name):
+        ''' Get a specific image annotation by current annotation id
+        '''
+        if image_name is not None:
+            return self.session.query(model.ImageAnno).filter(model.ImageAnno.img_path.contains(image_name)).first()
+        elif label_list is not None and user_list is not None:
+            return self.session.query(model.ImageAnno, model.Label, model.LabelLeaf).join(model.Label).join(model.LabelLeaf).filter(model.LabelLeaf.idx.in_(label_list), model.ImageAnno.user_od.in_(user_list)).all()
+        elif label_list is not None:
+            return self.session.query(model.ImageAnno, model.Label, model.LabelLeaf).join(model.Label).join(model.LabelLeaf).filter(model.LabelLeaf.idx.in_(label_list)).all()
+        elif user_list is not None:
+            return self.session.query(model.ImageAnno).filter(model.ImageAnno.user_id.in_(user_list)).all()
+        else:
+            raise Exception('Need to specify one of the method parameters')
 
     def get_all_two_d_label(self, two_d_anno_id):
         ''' Get all label of a two_d annotation

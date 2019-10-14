@@ -64,8 +64,8 @@ class Anno(Resource):
             return "You need to be {} in order to perform this request.".format(roles.ANNOTATOR), 401
 
         else:
-            last_img_id = int(anno_id)
-            re = sia.get_next(dbm, identity,last_img_id, DATA_URL)
+            anno_id = int(anno_id)
+            re = sia.get_review_anno(dbm, identity, anno_id, DATA_URL)
             dbm.close_session()
             return re
 
@@ -81,10 +81,9 @@ class FilterOptions(Resource):
         if not user.has_role(roles.ANNOTATOR):
             dbm.close_session()
             return "You need to be {} in order to perform this request.".format(roles.ANNOTATOR), 401
-
         else:
-            last_img_id = int(anno_id)
-            re = sia.get_next(dbm, identity,last_img_id, DATA_URL)
+            annotask_id = int(annotask_id)
+            re = sia.get_filter_options(dbm, identity, annotask_id)
             dbm.close_session()
             return re
 
@@ -99,10 +98,8 @@ class Filter(Resource):
         if not user.has_role(roles.ANNOTATOR):
             dbm.close_session()
             return "You need to be {} in order to perform this request.".format(roles.ANNOTATOR), 401
-
         else:
             data = json.loads(request.data)
-            # re = sia.get_filtered_annos(dbm, data, user.idx)
-            # dbm.close_session()
-            # return re
-            pass
+            re = sia.get_filtered_annos(dbm, data, user.idx)
+            dbm.close_session()
+            return re
