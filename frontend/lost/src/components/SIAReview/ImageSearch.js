@@ -1,10 +1,9 @@
 import React, { Component } from 'react'
-import { FormGroup, Badge, Label, Card, CardBody, CardHeader, Col, Row } from 'reactstrap'
+import { FormGroup, Badge, Label, CardBody, Col, Row } from 'reactstrap'
 import { Input, Icon, Button } from 'semantic-ui-react'
 import { connect } from 'react-redux'
 import actions from '../../actions'
 import 'semantic-ui-css/semantic.min.css';
-import Autocomplete from "react-autocomplete"
 import LabelInput from './LabelInput'
 import UserInput from './UserInput'
 const { getSiaReviewFilterOptions } = actions
@@ -62,7 +61,7 @@ class ImageSearch extends Component {
     }
    
     PressEnter(e) {
-        if (e.keyCode == 13) {
+        if (e.keyCode === 13) {
             let taglist = this.state.tags
             taglist.push(e.target.value)
             this.setState({ tags: taglist }, () => console.log(this.state.tags))

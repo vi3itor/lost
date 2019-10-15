@@ -8,4 +8,4 @@ import sia from './sia'
 import workers from './worker/index';
 import siareview from './siareview'
 
-export default { ...auth, ...label, ...group, ...user, ...annoTask, ...mia, ...sia, ...workers,... siareview}
+export default { ...auth, ...label, ...group, ...user, ...annoTask, ...mia, ...sia, ...workers, ...siareview}

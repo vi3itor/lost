@@ -9,7 +9,6 @@ import {
 import { connect } from 'react-redux'
 import actions from '../actions'
 import ImageSearch from '../components/SIAReview/ImageSearch'
-import SIAReviewCanvas from '../components/SIAReview/SIAReviewCanvas'
 import Canvas from '../components/SIA/Canvas'
 const { getSiaReviewFilterOptions, getSiaReviewAnnos,getSiaConfig,getSiaImage,siaSetSVG,siaLayoutUpdate,getSiaLabels, getSiaAnnos} = actions
 
@@ -56,7 +55,7 @@ class SiaReview extends Component {
 	 componentDidUpdate(prevProps, prevState)
 	 {
 		console.log('Sia did update', this.container.current.getBoundingClientRect())
-		if(prevProps.listOfAnnos[this.state.actualimage] != this.props.listOfAnnos[this.state.actualimage])
+		if(prevProps.listOfAnnos[this.state.actualimage] !== this.props.listOfAnnos[this.state.actualimage])
 		{
 		this.requestImageFromBackend()
 		}
@@ -178,15 +177,13 @@ class SiaReview extends Component {
 	}
 	callbackPrevImage()
 	{
+		if(this.state.actualimage >0)
 		{
-			if(this.state.actualimage >0)
-			{
-			let imNumber = this.state.actualimage
-			imNumber-= 1
-			this.setState({actualimage:imNumber},()=>this.requestImageFromBackend())
-			}	
-			console.log("test")
-		}
+		let imNumber = this.state.actualimage
+		imNumber-= 1
+		this.setState({actualimage:imNumber},()=>this.requestImageFromBackend())
+		}	
+		console.log("test")
 	}
 
 	render() {

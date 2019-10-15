@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import { Dropdown, Ref, Popup, Header} from 'semantic-ui-react'
+import { Dropdown, Ref, Header} from 'semantic-ui-react'
 
 
 class UserInput extends Component{
