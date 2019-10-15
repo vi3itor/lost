@@ -137,6 +137,12 @@ class MyAnnoTasks extends Component {
             }else return(<div>No Data available.</div>)
     }
 
+    renderReviewButton(annoTask){
+        if(annoTask.type === "SIA"){
+           return(<Button onClick={()=>this.handleReviewClick(annoTask)} color={'info'}>Review</Button>)
+        }
+    }
+
     renderTableBody() {
         return (
             <tbody>
@@ -191,7 +197,7 @@ class MyAnnoTasks extends Component {
                                 <Button onClick={()=>this.handleStatisticsClick(annoTask)} color={progress>0 ?'info':''}disabled={progress>0 ?false:true}><span className='icon-chart'>&nbsp;</span>Statistic</Button>
                             </td>
                             <td>
-                                <Button onClick={()=>this.handleReviewClick(annoTask)} color={progress>0?'info':''}>Review</Button>
+                                {this.renderReviewButton(annoTask)}
                             </td>
                         </tr>
                     )
