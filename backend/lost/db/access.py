@@ -501,11 +501,11 @@ class DBMan(object):
         else:
             return None
 
-    def get_sia_review_anno(self, anno_task_id, user_id, anno_id, iteration):
+    def get_sia_review_anno(self, user_id, anno_id):
         ''' Get a specific image annotation by current annotation id
         '''
-        sql = "SELECT * FROM image_anno WHERE iteration=%d AND anno_task_id=%d AND idx=%d"\
-         %(iteration, anno_task_id, anno_id)
+        sql = "SELECT * FROM image_anno WHERE idx=%d"\
+         %(anno_id)
         img_anno = self.session.execute(sql).first()
         if img_anno:
             return self.session.query(model.ImageAnno).filter(model.ImageAnno.idx==img_anno.idx).first()

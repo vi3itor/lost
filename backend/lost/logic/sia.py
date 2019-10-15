@@ -105,14 +105,11 @@ def get_review_anno(db_man, user_id, anno_id, media_url):
     """ Get review image anno
     :type db_man: lost.db.access.DBMan
     """
-    at = get_sia_anno_task(db_man, user_id)
-    iteration = db_man.get_pipe_element(pipe_e_id=at.pipe_element_id).iteration
-    image_anno = db_man.get_sia_review_anno(at.idx, user_id, anno_id, iteration)
+    image_anno = db_man.get_sia_review_anno(user_id, anno_id)
     if image_anno:
         image_anno.timestamp_lock = datetime.now()
         db_man.save_obj(image_anno)
-        current_image_number, total_image_amount = get_image_progress(db_man, at, image_anno.idx)
-        sia_serialize = SiaSerialize(image_anno, user_id, media_url, current_image_number, total_image_amount, is_first_image=False, is_last_image=False)
+        sia_serialize = SiaSerialize(image_anno, user_id, media_url, current_image_number=3, total_image_amount=5, is_first_image=False, is_last_image=False)
         return sia_serialize.serialize()
     else:
         return "nothing available"
@@ -219,13 +216,13 @@ def junk(db_man, user_id, img_id):
 
 def get_filter_options(db_man, user_id, annotask_id):
     filteroptions = dict()
-    filteroptions['labels'] = get_label_trees(db_man, user_id, annotask_id)
+    filteroptions['labels'] = get_label_trees(db_man, user_id, annotask_id)['labels']
     working_users = []
     at = db_man.get_anno_task(anno_task_id=annotask_id)
     for user in at.group.users:
         user_json = dict()
-        user['name'] = user.first_name + ' ' + user.last_name
-        user['id'] = user.idx
+        user_json['label'] = user.first_name + ' ' + user.last_name
+        user_json['id'] = user.idx
         working_users.append(user_json)
     filteroptions['users'] = working_users
     return filteroptions
