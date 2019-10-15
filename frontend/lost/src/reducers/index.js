@@ -10,6 +10,7 @@ import sia from './sia'
 import worker from './worker'
 import pipelineRunning from './pipelineRunning'
 import pipelineStart from './pipelineStart'
+import siareview from './siareview'
 
 const appReducer = combineReducers({
     auth,
@@ -22,7 +23,8 @@ const appReducer = combineReducers({
     worker,
     form: formReducer,
     pipelineRunning,
-    pipelineStart
+    pipelineStart,
+    siareview
 })
 
 

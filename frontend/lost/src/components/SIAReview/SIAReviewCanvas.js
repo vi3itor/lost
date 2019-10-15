@@ -1,26 +1,23 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import actions from '../../actions'
-import './SIA.scss';
+import '../SIA/SIA.scss';
 import 'semantic-ui-css/semantic.min.css'
 
-import Canvas from './Canvas'
-import ToolBar from './ToolBar'
-import {NotificationManager, NotificationContainer } from 'react-notifications'
+import Canvas from '../SIA/Canvas'
+import ToolBar from '../SIA/ToolBar'
 import { createHashHistory } from 'history'
-import InfoBoxArea from './InfoBoxes/InfoBoxArea'
-import 'react-notifications/lib/notifications.css';
-
-import * as notificationType from './types/notificationType'
+import InfoBoxArea from '../SIA/InfoBoxes/InfoBoxArea'
+import SiaReview from '../../views/SiaReview';
 
 const { 
-    siaLayoutUpdate, getSiaAnnos,
+    siaAppliedFullscreen, siaLayoutUpdate, getSiaAnnos,
     getSiaLabels, getSiaConfig, siaSetSVG, getSiaImage, 
-    siaUpdateAnnos, siaSendFinishToBackend,
-    selectAnnotation, siaShowImgLabelInput, siaImgIsJunk, getWorkingOnAnnoTask
+    siaSetImageLoaded, siaUpdateAnnos, siaSendFinishToBackend,
+    selectAnnotation, siaShowImgBar
 } = actions
 
-class SIA extends Component {
+class SiaReviewCanvas extends Component {
 
     constructor(props) {
         super(props)
@@ -32,17 +29,17 @@ class SIA extends Component {
                 data: undefined,
             },
             layoutOffset: {
-                left: 20,
+                left: 0,
                 top: 0,
-                bottom: 5,
-                right: 5
-            },
-            notification: undefined
+                bottom: 10,
+                right: 0
+            }
         }
         this.siteHistory = createHashHistory()
         
         this.container = React.createRef()
         this.canvas = React.createRef()
+       
     }
 
     componentDidMount() {
@@ -52,7 +49,6 @@ class SIA extends Component {
         this.props.getSiaAnnos(-1)
         this.props.getSiaLabels()
         this.props.getSiaConfig()
-        // console.warn('We are not using real SIA config')
     }
     componentWillUnmount() {
         window.removeEventListener("resize", this.props.siaLayoutUpdate);
@@ -65,43 +61,7 @@ class SIA extends Component {
             // this.props.siaAppliedFullscreen(this.props.fullscreenMode)
             this.props.siaLayoutUpdate()
         }
-        if (prevState.notification !== this.state.notification){
-            const notifyTimeOut = 5000
-            if (this.state.notification){
-                switch(this.state.notification.type){
-                    case notificationType.WARNING:
-                        NotificationManager.warning(
-                            this.state.notification.message,
-                            this.state.notification.title,
-                            notifyTimeOut
-                        )
-                        break
-                    case notificationType.INFO:
-                        NotificationManager.info(
-                            this.state.notification.message,
-                            this.state.notification.title,
-                            notifyTimeOut
-                        )
-                        break
-                    case notificationType.ERROR:
-                        NotificationManager.error(
-                            this.state.notification.message,
-                            this.state.notification.title,
-                            notifyTimeOut
-                        )
-                        break
-                    case notificationType.SUCCESS:
-                        NotificationManager.success(
-                            this.state.notification.message,
-                            this.state.notification.title,
-                            notifyTimeOut
-                        )
-                        break
-                    default:
-                        break
-                }
-            }
-        }
+
         if (prevProps.getNextImage !== this.props.getNextImage){
             if (this.props.getNextImage){
                 const newAnnos = this.canvas.current.getAnnos()
@@ -111,7 +71,6 @@ class SIA extends Component {
                     id: undefined, 
                     data:undefined
                 }})
-                this.props.siaImgIsJunk(false)
                 this.props.siaUpdateAnnos(newAnnos).then((r) => {
                     console.log('SIA REQUEST: Updated Annos', r)
                     this.props.getSiaAnnos(this.props.getNextImage)
@@ -128,14 +87,11 @@ class SIA extends Component {
                     id: undefined, 
                     data:undefined
                 }})
-                this.props.siaImgIsJunk(false)
                 this.props.siaUpdateAnnos(newAnnos).then(() => {
                     this.props.getSiaAnnos(this.props.getPrevImage, 'prev')
                 })
+                
             }
-        }
-        if (prevProps.annos !== this.props.annos){
-            this.props.siaImgIsJunk(this.props.annos.image.isJunk)
         }
         if (prevProps.taskFinished !== this.props.taskFinished){
             const newAnnos = this.canvas.current.getAnnos()
@@ -157,19 +113,8 @@ class SIA extends Component {
         }
     }
 
-    // handleImgBarClose(){
-    //     this.props.siaShowImgBar(false)
-    // }
-
-    handleImgLabelInputClose(){
-        this.props.siaShowImgLabelInput(!this.props.imgLabelInput.show)
-    }
-
-    handleNotification(messageObj){
-        console.log('SIANotification', messageObj)
-        this.setState({
-            notification: messageObj
-        })
+    handleImgBarClose(){
+        this.props.siaShowImgBar(false)
     }
 
     requestImageFromBackend(){
@@ -179,11 +124,9 @@ class SIA extends Component {
                     // ...this.state.image, 
                     id: this.props.annos.image.id, 
                     data:window.URL.createObjectURL(response)
-                    
                 }})
             }
-        )
-        this.props.getWorkingOnAnnoTask()       
+        )       
     }
 
     setFullscreen(fullscreen = true) {
@@ -194,7 +137,6 @@ class SIA extends Component {
                     layoutOffset: {
                         ...this.state.layoutOffset,
                         left: 50,
-                        top: 5,
                     } 
                 })
             }
@@ -204,8 +146,7 @@ class SIA extends Component {
                     fullscreenCSS: '',
                     layoutOffset: {
                         ...this.state.layoutOffset,
-                        left: 20,
-                        top: 0,
+                        left: 0,
                     } 
                 })
             }
@@ -214,33 +155,29 @@ class SIA extends Component {
 
     render() {
         console.log('Sia renders', this.state.image)
-        console.log("____________________LABELS", this.props.possibleLabels,"____________________Annos",this.props.annos)
+        console.log("___________________________")
+        console.log(this.props)
         return (
             <div className={this.state.fullscreenCSS} ref={this.container}>
                 <Canvas
                     ref={this.canvas} 
-                    imgBarVisible={true}
-                    imgLabelInputVisible={this.props.imgLabelInput.show}
+                    imgBarVisible={this.props.imgBar.show}
                     container={this.container}
                     annos={this.props.annos}
                     image={this.state.image}
                     uiConfig={this.props.uiConfig}
-                    // Wichtig für ansicht update
                     layoutUpdate={this.props.layoutUpdate}
                     selectedTool={this.props.selectedTool}
                     canvasConfig={this.props.canvasConfig}
                     possibleLabels={this.props.possibleLabels}
                     onSVGUpdate={svg => this.props.siaSetSVG(svg)}
+                    // onImageLoaded={() => this.handleCanvasImageLoaded()}
                     onAnnoSelect={anno => this.props.selectAnnotation(anno)}
+                    onImgBarClose={() => this.handleImgBarClose()}
                     layoutOffset={this.state.layoutOffset}
-                    isJunk={this.props.isJunk}
-                    onImgLabelInputClose={() => this.handleImgLabelInputClose()}
-                    centerCanvasInContainer={true}
-                    onNotification={(messageObj) => this.handleNotification(messageObj)}
                 />
-                <ToolBar onDeleteAllAnnos={() => this.canvas.current.deleteAllAnnos()}></ToolBar>
+                <ToolBar container={this.container}></ToolBar>
                 <InfoBoxArea container={this.container}></InfoBoxArea>
-                <NotificationContainer/>
              </div>
         )
     }
@@ -262,9 +199,8 @@ function mapStateToProps(state) {
         requestAnnoUpdate: state.sia.requestAnnoUpdate,
         taskFinished: state.sia.taskFinished,
         possibleLabels: state.sia.possibleLabels,
-        imgLabelInput: state.sia.imgLabelInput,
-        canvasConfig: state.sia.config,
-        isJunk: state.sia.isJunk
+        imgBar: state.sia.imgBar,
+        canvasConfig: state.sia.config
     })
 }
 
@@ -275,10 +211,8 @@ export default connect(
         getSiaConfig, getSiaLabels, siaSetSVG, getSiaImage,
         siaUpdateAnnos, siaSendFinishToBackend,
         selectAnnotation,
-        siaShowImgLabelInput,
-        siaImgIsJunk,
-        getWorkingOnAnnoTask,
+        siaShowImgBar
     }
     , null,
-    {})(SIA)
+    {})(SiaReviewCanvas)
 

@@ -92,6 +92,7 @@ class AnnotatorDashboard extends Component {
                                 <br/>
                                 <MyAnnoTasks
                                     annoTasks={this.props.annoTasks}
+                                    history = {this.props.history}
                                     callBack={(id, type) => this.chooseAnnoTask(id, type)}></MyAnnoTasks>
                             </CardBody>
                         </Card>
