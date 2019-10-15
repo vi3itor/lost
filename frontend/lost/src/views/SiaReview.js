@@ -11,7 +11,7 @@ import actions from '../actions'
 import ImageSearch from '../components/SIAReview/ImageSearch'
 import SIAReviewCanvas from '../components/SIAReview/SIAReviewCanvas'
 import Canvas from '../components/SIA/Canvas'
-const { getSiaReviewFilterOptions, getSiaReviewAnnos,getSiaConfig,getSiaImage,siaSetSVG,siaLayoutUpdate,getSiaLabels, getSiaAnnos} = actions
+const { getSiaReviewFilterOptions, getSiaReviewAnnos,getSiaConfig,getSiaImage,siaSetSVG,siaLayoutUpdate,getSiaLabels, getSiaAnnos, siaReviewfilter} = actions
 
 
 
@@ -282,4 +282,4 @@ function mapStateToProps(state) {
 	})
 }
 
-export default connect(mapStateToProps, { getSiaReviewFilterOptions, getSiaReviewAnnos,getSiaConfig, getSiaImage,siaSetSVG ,siaLayoutUpdate,getSiaLabels, getSiaAnnos})(SiaReview)
+export default connect(mapStateToProps, { getSiaReviewFilterOptions, getSiaReviewAnnos,getSiaConfig, getSiaImage,siaSetSVG ,siaLayoutUpdate,getSiaLabels, getSiaAnnos,siaReviewfilter})(SiaReview)
