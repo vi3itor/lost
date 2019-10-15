@@ -10,9 +10,7 @@ import { connect } from 'react-redux'
 import actions from '../actions'
 import ImageSearch from '../components/SIAReview/ImageSearch'
 import Canvas from '../components/SIA/Canvas'
-const { getSiaReviewFilterOptions, getSiaReviewAnnos,getSiaConfig,getSiaImage,siaSetSVG,siaLayoutUpdate,getSiaLabels, getSiaAnnos} = actions
-
-
+const { getSiaReviewFilterOptions, getSiaReviewAnnos,getSiaConfig,getSiaImage,siaSetSVG,siaLayoutUpdate,getSiaLabels} = actions
 
 class SiaReview extends Component {
 	constructor(props) {
@@ -42,18 +40,24 @@ class SiaReview extends Component {
         this.canvas = React.createRef()
 		this.callbackNextImage = this.callbackNextImage.bind(this)
 		this.callbackPrevImage = this.callbackPrevImage.bind(this)
-		console.log(this.props.listOfAnnos)
 	}
 	componentDidMount() {
-		this.props.getSiaReviewFilterOptions()
-		this.props.getSiaReviewAnnos()
-		this.props.getSiaAnnos(-1)
+		if (this.state.taskId){
+			this.props.getSiaReviewFilterOptions(this.state.taskId)
+		}
+		this.props.getSiaReviewAnnos(21)
 	
 	}
 
-
 	 componentDidUpdate(prevProps, prevState)
 	 {
+		try{
+			const labelLength = this.props.listOfPossibleFilters.labels.length
+		}
+		catch(e){
+			return undefined
+		}
+
 		console.log('Sia did update', this.container.current.getBoundingClientRect())
 		if(prevProps.listOfAnnos[this.state.actualimage] !== this.props.listOfAnnos[this.state.actualimage])
 		{
@@ -65,47 +69,6 @@ class SiaReview extends Component {
             // this.props.siaAppliedFullscreen(this.props.fullscreenMode)
             this.props.siaLayoutUpdate()
         }
-       /*
-        if (prevProps.getNextImage !== this.props.getNextImage){
-            if (this.props.getNextImage){
-                const newAnnos = this.canvas.current.getAnnos()
-                this.canvas.current.unloadImage()
-                console.log('getNextImage newAnnos', newAnnos)
-                this.setState({image: {
-                    id: undefined, 
-                    data:undefined
-                }})
-                this.props.siaUpdateAnnos(newAnnos).then((r) => {
-                    console.log('SIA REQUEST: Updated Annos', r)
-                    this.props.getSiaAnnos(this.props.getNextImage)
-                    
-                })
-                
-            }
-        }
-        if (prevProps.getPrevImage !== this.props.getPrevImage){
-            if (this.props.getPrevImage){
-                const newAnnos = this.canvas.current.getAnnos()
-                this.canvas.current.unloadImage()
-                this.setState({image: {
-                    id: undefined, 
-                    data:undefined
-                }})
-                this.props.siaUpdateAnnos(newAnnos).then(() => {
-                    this.props.getSiaAnnos(this.props.getPrevImage, 'prev')
-                })
-                
-            }
-        }
-        if (prevProps.taskFinished !== this.props.taskFinished){
-            const newAnnos = this.canvas.current.getAnnos()
-            this.props.siaUpdateAnnos(newAnnos).then(()=>{
-                this.props.siaSendFinishToBackend().then(()=>{
-                    this.siteHistory.push('/dashboard')
-
-                })
-            })
-        }*/
         if(this.props.annos.image){
             if (prevProps.annos.image){
                 if(this.props.annos.image.id !== prevProps.annos.image.id){
@@ -127,7 +90,8 @@ class SiaReview extends Component {
 
     handleImgBarClose(){
         this.props.siaShowImgBar(false)
-    }
+	}
+	
 	requestImageFromBackend(){
         this.props.getSiaImage(this.props.listOfAnnos[this.state.actualimage].image.url).then(response=>
             {
@@ -140,6 +104,7 @@ class SiaReview extends Component {
             }
         )       
 	}
+
 	setFullscreen(fullscreen = true) {
         if (!true) {
             if (this.state.fullscreenCSS !== 'sia-fullscreen') {
@@ -187,22 +152,17 @@ class SiaReview extends Component {
 	}
 
 	render() {
-		//                                                           GetWorkingReviewTask || Oder TaskID in URL
-		//																										     StartSIAwith
+		if (this.props.listOfPossibleFilters.length < 1){
+			return(<div>Loading...</div>)
+		}
 
-
-		// GET_SIA_ANNOS_FROMANNOTASKID  ==> Canvas Ausgeben restlichen SIA Funktionen nutzen wie sie sind?
-		// 
-		//
-		// 
 		console.log(this.props.listOfAnnos[0])
 		console.log(typeof (this.props.listOfPossibleFilters))
 		console.log("________________________________", this.props.listOfPossibleFilters)
 
 		const ImageSea = this.props.listOfPossibleFilters ? <ImageSearch annoId={this.state.taskId} filter={this.props.listOfPossibleFilters} parentCallback={this.callbackNextImage} prevImage={this.callbackPrevImage}></ImageSearch> : null
 		//const ImageS = this.props.workingOnAnnoTask?<ImageSearch annoId={this.state.taskId} filter={this.props.listOfPossibleFilters}></ImageSearch>:null;
-		console.log(this.props.getSiaReviewFilterOptions)
-		if (!this.props.listOfPossibleFilters.listOfPossibleLabels || !this.props.listOfPossibleFilters.listOfALLUserInTask ){
+		if (!this.props.listOfPossibleFilters.labels || !this.props.listOfPossibleFilters.users ){
 			return (
 				<div></div>
 			)
@@ -219,7 +179,7 @@ class SiaReview extends Component {
 		layoutUpdate={this.state.layoutUpdate}
 		selectedTool={"bbox"}
 		canvasConfig={this.props.canvasConfig}
-		possibleLabels={this.props.listOfPossibleFilters.listOfPossibleLabels}
+		possibleLabels={this.props.listOfPossibleFilters.labels}
 	//	onSVGUpdate={svg => this.props.siaSetSVG(svg)}
 		// onImageLoaded={() => this.handleCanvasImageLoaded()}
 	//	onAnnoSelect={anno => this.props.selectAnnotation(anno)}
@@ -279,4 +239,4 @@ function mapStateToProps(state) {
 	})
 }
 
-export default connect(mapStateToProps, { getSiaReviewFilterOptions, getSiaReviewAnnos,getSiaConfig, getSiaImage,siaSetSVG ,siaLayoutUpdate,getSiaLabels, getSiaAnnos})(SiaReview)
+export default connect(mapStateToProps, { getSiaReviewFilterOptions, getSiaReviewAnnos,getSiaConfig, getSiaImage,siaSetSVG ,siaLayoutUpdate,getSiaLabels})(SiaReview)

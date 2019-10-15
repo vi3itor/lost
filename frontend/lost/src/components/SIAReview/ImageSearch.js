@@ -2,19 +2,17 @@ import React, { Component } from 'react'
 import { FormGroup, Badge, Label, CardBody, Col, Row } from 'reactstrap'
 import { Input, Icon, Button } from 'semantic-ui-react'
 import { connect } from 'react-redux'
-import actions from '../../actions'
 import 'semantic-ui-css/semantic.min.css';
 import LabelInput from './LabelInput'
 import UserInput from './UserInput'
-const { getSiaReviewFilterOptions } = actions
 class ImageSearch extends Component {
     constructor(props) {
         super(props)
         console.log(props)
         this.state = {
             tags: [],
-            suggestions: this.props.filter.listOfPossibleLabels,
-            suggestionsUnames:this.props.filter.listOfALLUserInTask,
+            suggestions: this.props.filter.labels,
+            suggestionsUnames:this.props.filter.users,
             IdtoLabel: null,
             Usernames: [],
             IdtoUsername:null
@@ -30,7 +28,6 @@ class ImageSearch extends Component {
         console.log(this.state.tagnamelist)
     }
     componentDidMount() {
-        this.props.getSiaReviewFilterOptions()
         let idtolabel = new Map()
         let idtoUname = new Map()
        console.log("HALOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO",this.props)
@@ -109,7 +106,7 @@ class ImageSearch extends Component {
         })
         console.log(this.state)
         console.log(this.props)
-        let items = this.props.listOfPossibleFilters.listOfPossibleLabels
+        let items = this.props.listOfPossibleFilters.labels
         console.log(items)
         return (
 
@@ -140,7 +137,7 @@ class ImageSearch extends Component {
                                            // relatedId={this.props.annos.image.id}
                                             visible={true}
                                             //onLabelUpdate={label => this.handleLabelUpdate(label)}
-                                            possibleLabels={this.props.listOfPossibleFilters.listOfPossibleLabels?this.props.listOfPossibleFilters.listOfPossibleLabels:[]}
+                                            possibleLabels={this.props.listOfPossibleFilters.labels?this.props.listOfPossibleFilters.labels:[]}
                                             parentcallback={this.CallbackBadgesLabels}
                                             //initLabelIds={this.props.imgLabelIds}
                                          //   relatedId={this.props.annos.image.id}
@@ -154,7 +151,7 @@ class ImageSearch extends Component {
                                            // relatedId={this.props.annos.image.id}
                                             visible={true}
                                             //onLabelUpdate={label => this.handleLabelUpdate(label)}
-                                            possibleLabels={this.props.listOfPossibleFilters.listOfALLUserInTask?this.props.listOfPossibleFilters.listOfALLUserInTask:[]}
+                                            possibleLabels={this.props.listOfPossibleFilters.users?this.props.listOfPossibleFilters.users:[]}
                                             parentcallback={this.CallbackBadgesUnames}
                                             //initLabelIds={this.props.imgLabelIds}
                                          //   relatedId={this.props.annos.image.id}
@@ -191,4 +188,4 @@ class ImageSearch extends Component {
 function mapStateToProps(state) {
     return ({ listOfPossibleFilters: state.siareview.listOfPossibleFilters })
 }
-export default connect(mapStateToProps, { getSiaReviewFilterOptions })(ImageSearch)
+export default connect(mapStateToProps, undefined)(ImageSearch)
