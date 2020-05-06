@@ -109,6 +109,8 @@ import './SIA.scss'
  * @event onImgLabelInputClose - ImgLabelInput requests to be closed.
  * @event onNotification - Callback for Notification messages
  *      args: {title: str, message: str, type: str}
+ * @event onKeyDown - Fires for keyDown on canvas 
+ * @event onKeyUp - Fires for keyUp on canvas 
  */
 class Canvas extends Component{
 
@@ -333,6 +335,7 @@ class Canvas extends Component{
 
     handleKeyAction(action){
         const anno = this.findAnno(this.state.selectedAnnoId)
+        const camKeyStepSize = 20 * this.state.svg.scale
         console.log('handleKeyAction: ', action)
         switch(action){
             case keyActions.EDIT_LABEL:
@@ -367,6 +370,22 @@ class Canvas extends Component{
             case keyActions.TRAVERSE_ANNOS:
                 this.traverseAnnos()
                 break
+            case keyActions.CAM_MOVE_LEFT:
+                // this.setMode(modes.CAMERA_MOVE)
+                this.moveCamera(camKeyStepSize, 0)
+                break
+            case keyActions.CAM_MOVE_RIGHT:
+                this.moveCamera(-camKeyStepSize, 0)
+                break
+            case keyActions.CAM_MOVE_UP:
+                this.moveCamera(0, camKeyStepSize)
+                break
+            case keyActions.CAM_MOVE_DOWN:
+                this.moveCamera(0, -camKeyStepSize)
+                break
+            case keyActions.CAM_MOVE_STOP:
+                // this.setMode(modes.VIEW)
+                break
             default:
                 console.warn('Unknown key action', action)
         }
@@ -377,18 +396,24 @@ class Canvas extends Component{
         e.preventDefault()
         this.keyMapper.keyDown(e.key)
         console.log('KEY down on Canvas', e.key, e.keyCode, e.keyCode, e.altKey, e.ctrlKey, e.metaKey, e.shiftKey)
-        this.findAnno(this.state.selectedAnnoId)
+        // this.findAnno(this.state.selectedAnnoId)
+        if (this.props.onKeyDown){
+            this.props.onKeyDown(e)
+        }
     }
 
     onKeyUp(e){
         e.preventDefault()
         this.keyMapper.keyUp(e.key)
+        if (this.props.onKeyUp){
+            this.props.onKeyUp(e)
+        }
         // console.log('KEY up on Canvas', e.key, e.keyCode, e.keyCode, e.altKey, e.ctrlKey, e.metaKey, e.shiftKey)
     }
 
     onMouseMove(e){
         if (this.state.mode === modes.CAMERA_MOVE){
-            this.moveCamera(e)
+            this.moveCamera(e.movementX, e.movementY)
         }
     }
 
@@ -773,9 +798,9 @@ class Canvas extends Component{
         }})
     }
 
-    moveCamera(e){
-        let trans_x = this.state.svg.translateX + e.movementX / this.state.svg.scale
-        let trans_y = this.state.svg.translateY + e.movementY / this.state.svg.scale
+    moveCamera(movementX, movementY){
+        let trans_x = this.state.svg.translateX + movementX / this.state.svg.scale
+        let trans_y = this.state.svg.translateY + movementY / this.state.svg.scale
         const vXMin = this.state.svg.width * 0.25
         const vXMax = this.state.svg.width * 0.75
         const yXMin = this.state.svg.height * 0.25
