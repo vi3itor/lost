@@ -1,4 +1,4 @@
-ARG base_image=l3pcv/lost-base:latest
+ARG base_image=lepel/lost-base:latest
 FROM $base_image
 # Add Code  
 ADD /docker/lost/entrypoint.sh /
