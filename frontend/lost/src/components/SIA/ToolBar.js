@@ -274,6 +274,52 @@ class ToolBar extends Component{
             />
         )
     }
+
+    renderFiveClassesButtons(){
+        let btns = []
+        btns.push(
+          <Menu.Item name='looks one' key='1'
+                     active={false}
+                     onClick={() => this.setLabel(1)}
+          >
+            {siaIcons.looksOneIcon()}
+          </Menu.Item>
+        )
+        btns.push(
+        <Menu.Item name='looks two' key='2'
+                   active={false}
+                   onClick={() => this.setLabel(2)}
+        >
+          {siaIcons.looksTwoIcon()}
+        </Menu.Item>
+        )
+        btns.push(
+          <Menu.Item name='looks three' key='3'
+                     active={false}
+                     onClick={() => this.setLabel(3)}
+          >
+            {siaIcons.looksThreeIcon()}
+          </Menu.Item>
+        )
+        btns.push(
+          <Menu.Item name='looks four' key='4'
+                     active={false}
+                     onClick={() => this.setLabel(4)}
+          >
+            {siaIcons.looksFourIcon()}
+          </Menu.Item>
+        )
+        btns.push(
+          <Menu.Item name='looks five' key='5'
+                     active={false}
+                     onClick={() => this.setLabel(5)}
+          >
+            {siaIcons.looksFiveIcon()}
+          </Menu.Item>
+        )
+        return btns
+    }
+
     /**
      * Render next and prev image buttons 
      *

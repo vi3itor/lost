@@ -1,10 +1,10 @@
 import React from 'react'
 
 export function textIcon(){
-  return <svg version="1.1" xmlns="http://www.w3.org/2000/svg" 
+  return <svg version="1.1" xmlns="http://www.w3.org/2000/svg"
           // x="0px" y="0px"
-          // width="1190.549px" height="841.891px" 
-          viewBox="0 0 1190.549 841.891" 
+          // width="1190.549px" height="841.891px"
+          viewBox="0 0 1190.549 841.891"
           width="17px"
           // onClick={e => this.handleClick(e)}
   >
@@ -22,5 +22,52 @@ export function textIcon(){
           c153.191,0.001,459.578,0.004,459.578,0.004s20.149-0.287,35.766-0.17c0.983-0.023,18.696,1.188,30.027,13.07
           c11.333,11.885,9.972,27.513,9.972,28.256c-0.024,42.091,0.255,84.183-0.007,126.274c-0.247,26.341-22.705,41.944-44.85,42.037
           C948.049,214.236,926.687,199.643,925.876,172.939z"/>
+  </svg>
+}
+
+export function looksOneIcon(){
+    return <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384">
+
+        <path id="one" fillRule="evenodd" clipRule="evenodd" fill="currentColor" d="M341.333,0H42.667C19.093,0,0,19.093,0,42.667v298.667C0,364.907,19.093,384,42.667,384h298.667
+          C364.907,384,384,364.907,384,341.333V42.667C384,19.093,364.907,0,341.333,0z M234.667,298.667H192V128h-42.667V85.333h85.333
+          V298.667z"/>
+    </svg>
+}
+
+export function looksTwoIcon(){
+  return <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384">
+
+    <path id="two" fillRule="evenodd" clipRule="evenodd" fill="currentColor" d="M341.333,0H42.667C19.093,0,0,19.093,0,42.667v298.667C0,364.907,19.093,384,42.667,384h298.667
+			C364.907,384,384,364.907,384,341.333V42.667C384,19.093,364.907,0,341.333,0z M256,170.667c0,23.573-19.093,42.667-42.667,42.667
+			h-42.667V256H256v42.667H128v-85.333c0-23.573,19.093-42.667,42.667-42.667h42.667V128H128V85.333h85.333
+			C236.907,85.333,256,104.427,256,128V170.667z"/>
+  </svg>
+}
+
+export function looksThreeIcon(){
+  return <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384">
+
+    <path id="three" fillRule="evenodd" clipRule="evenodd" fill="currentColor" d="M341.333,0H42.667C19.093,0,0,19.093,0,42.667v298.667C0,364.907,19.093,384,42.667,384h298.667
+			C364.907,384,384,364.907,384,341.333V42.667C384,19.093,364.907,0,341.333,0z M256,160c0,17.707-14.293,32-32,32
+			c17.707,0,32,14.293,32,32v32c0,23.573-19.093,42.667-42.667,42.667H128V256h85.333v-42.667h-42.667v-42.667h42.667V128H128
+			V85.333h85.333C236.907,85.333,256,104.427,256,128V160z"/>
+  </svg>
+}
+
+export function looksFourIcon(){
+  return <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384">
+
+    <path id="four" fillRule="evenodd" clipRule="evenodd" fill="currentColor" d="M341.333,0H42.667C19.093,0,0,19.093,0,42.667v298.667C0,364.907,19.093,384,42.667,384h298.667
+			C364.907,384,384,364.907,384,341.333V42.667C384,19.093,364.907,0,341.333,0z M256,298.667h-42.667v-85.333H128v-128h42.667
+			v85.333h42.667V85.333H256V298.667z"/>
+  </svg>
+}
+
+export function looksFiveIcon(){
+  return <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384">
+
+    <path id="five" fillRule="evenodd" clipRule="evenodd" fill="currentColor" d="M341.333,0H42.667C19.093,0,0,19.093,0,42.667v298.667C0,364.907,19.093,384,42.667,384h298.667
+			C364.907,384,384,364.907,384,341.333V42.667C384,19.093,364.907,0,341.333,0z M256,128h-85.333v42.667h42.667
+			c23.573,0,42.667,19.093,42.667,42.667V256c0,23.573-19.093,42.667-42.667,42.667H128V256h85.333v-42.667H128v-128h128V128z"/>
   </svg>
 }
