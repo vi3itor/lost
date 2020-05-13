@@ -386,6 +386,21 @@ class Canvas extends Component{
             case keyActions.CAM_MOVE_STOP:
                 // this.setMode(modes.VIEW)
                 break
+            case keyActions.LABEL_AS_1:
+                this.handleImgLabelWithNumber(1)
+                break
+            case keyActions.LABEL_AS_2:
+                this.handleImgLabelWithNumber(2)
+                break
+            case keyActions.LABEL_AS_3:
+                this.handleImgLabelWithNumber(3)
+                break
+            case keyActions.LABEL_AS_4:
+                this.handleImgLabelWithNumber(4)
+                break
+            case keyActions.LABEL_AS_5:
+                this.handleImgLabelWithNumber(5)
+                break
             default:
                 console.warn('Unknown key action', action)
         }
@@ -555,6 +570,12 @@ class Canvas extends Component{
             label
         )
     }
+    
+    handleImgLabelWithNumber(num){
+        // TODO: Use this function only when five classes are defined in config
+        //if (typeof this.props.canvasConfig.img.fiveClasses !== 'undefined')
+        this.handleImgLabelUpdate([this.props.possibleLabels[num - 1].id])
+    }
 
     handleCanvasClick(e){
         if (this.props.imgBarVisible){
@@ -677,7 +698,7 @@ class Canvas extends Component{
      * 
      * @param {list} annotations - Annotations in backend format
      * @param {list} imgLabelIds - IDs of the image labels
-     * @param {object} selectedAnno - The selected annotation
+     * @param {object} selectedAnnoId - The selected annotation
      * @param {int} showSingleAnno - The id of the single annotation
      *      that should be visible
      */
@@ -748,7 +769,7 @@ class Canvas extends Component{
             var annoId 
             if (forBackendPost){
                 // If an annotation will be send to backend,
-                // ids of new created annoations need to be set to 
+                // ids of new created annotations need to be set to
                 // undefined.
                 annoId = (typeof el.id) === "string" ? undefined : el.id
             } else {
