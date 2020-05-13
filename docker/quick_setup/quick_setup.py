@@ -27,7 +27,7 @@ class DockerComposeBuilder(object):
     def get_lost(self):
         return (
             '    lost:\n'
-            '      image: l3pcv/lost:${LOST_VERSION}\n'
+            '      image: lepel/lost:latest\n'
             '      container_name: lost\n'
             '      command: bash /entrypoint.sh\n'
             '      env_file:\n'
