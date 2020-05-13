@@ -92,13 +92,6 @@ class WorkingOnSIA extends Component {
                  </div>
                 </Col>
                 <Col xs='2' md='2' xl='2'>
-                  <div className='callout callout-success'>
-                                <small className='text-muted'>Seconds/Annotation</small>
-                                <br/>
-                                <strong className='h4'>&#8709; {this.props.annoTask.statistic.secondsPerAnno}</strong>
-                 </div>
-                </Col>
-                <Col xs='2' md='2' xl='2'>
                     <Button color='primary' style={{marginTop: '25px'}} onClick={this.openModal}><i className="fa fa-question-circle"></i> Show Instructions</Button>
                 </Col>
                 </Row>

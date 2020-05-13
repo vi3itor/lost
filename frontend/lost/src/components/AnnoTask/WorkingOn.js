@@ -36,13 +36,6 @@ class WorkingOn extends Component {
                                 <strong className='h4'>{this.props.annoTask.finished}/{this.props.annoTask.size}</strong>
                  </div>
                 </Col>
-                <Col xs='3' md='3' xl='3'>
-                  <div className='callout callout-success'>
-                                <small className='text-muted'>Seconds/Annotation</small>
-                                <br/>
-                                <strong className='h4'>&#8709; {this.props.annoTask.statistic.secondsPerAnno}</strong>
-                 </div>
-                </Col>
                 </Row>
                 <div className='clearfix'>
                     <div className='float-left'>

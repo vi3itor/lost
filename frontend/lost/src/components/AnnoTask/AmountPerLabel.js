@@ -52,7 +52,7 @@ class AmountPerLabel extends Component {
             )
         } else {
             return (
-                <React.Fragment>No Data available yet.</React.Fragment>
+                <React.Fragment></React.Fragment>
             )
         }
 

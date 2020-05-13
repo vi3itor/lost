@@ -110,17 +110,9 @@ class MyAnnoTasks extends Component {
                                 <strong className='h4'>{this.props.specificAnnoTaskStatistic.finished}/{this.props.specificAnnoTaskStatistic.size}</strong>
                 </div>
                 </Col>
-                <Col xs='3' md='3' xl='3'>
-                <div className='callout callout-success'>
-                                <small className='text-muted'>Seconds/Annotation</small>
-                                <br/>
-                                <strong className='h4'>&#8709; {this.props.specificAnnoTaskStatistic.statistic.secondsPerAnno}</strong>
-                </div>
-                </Col>
                 </Row>
-                <AmountPerLabel data={this.props.specificAnnoTaskStatistic.statistic.amountPerLabel}></AmountPerLabel>
             </div>)
-            }else return(<div>No Data available.</div>)
+            }else return(<div></div>)
     }
 
     renderTableBody() {
