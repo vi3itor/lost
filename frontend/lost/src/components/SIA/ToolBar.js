@@ -354,38 +354,26 @@ class ToolBar extends Component{
                 content={<div>
                     <Card.Group>
                     <Card>
-                        <Card.Content header='How to draw?' />
-                        <Card.Content description='1.) Select a Tool in the toolbar 2.) Draw with RIGHT CLICK on Canvas' />
+                        <Card.Content header='How to assign a label?'/>
+                        <Card.Content description='Hit a number from 1 to 5 on the keyboard. Alternatively, you can press T-button in the toolbar and choose the label from the list.'/>
                     </Card>
                     <Card>
-                        <Card.Content header='How to delete an annotation?' />
-                        <Card.Content description='1.) Select an annotation with LEFT CLICK 2.) Press DELETE or BACKSPACE' />
+                        <Card.Content header='Next/Previous image navigation'/>
+                        <Card.Content description='Get next image by hitting ARROW_RIGHT key. Get previous image by hitting ARROW_LEFT key.'/>
+                    </Card>    
+                    <Card>
+                        <Card.Content header='Undo/Redo'/>
+                        <Card.Content description='To undo an action hit CTRL + Z'/>
+                        <Card.Content description='Redo: Hit CTRL + R'/>
                     </Card>
                     <Card>
-                        <Card.Content header='How to assign a label?' />
-                        <Card.Content description='1.) Select an annotation with LEFT CLICK 2.) Hit ENTER 3.) Type into the input field 4.) Hit ENTER to confirm 5.) Hit ESCAPE to close the input field'/>
-                    </Card>
-                    <Card>
-                        <Card.Content header='Undo/ Redo' />
-                        <Card.Content description='Undo: Hit STRG + Z'/>
-                        <Card.Content description='Redo: Hit STRG + R'/>
-                    </Card>
-                    <Card>
-                        <Card.Content header='Add a node to Line/Polygon' />
-                        <Card.Content description='Hit STRG + Click left on the line'/>
-                    </Card>
-                    <Card>
-                        <Card.Content header='Zoom/ Move Canvas' />
+                        <Card.Content header='Zoom/ Move Canvas'/>
                         <Card.Content description='Zoom: Use MOUSE WHEEL to zoom in/out'/>
                         <Card.Content description='Move: Hold MOUSE WHEEL and move mouse. Or Use W/A/S/D keys to move camera up/left/down/right'/>
                     </Card>
                     <Card>
-                        <Card.Content header='TAB navigation' />
-                        <Card.Content description='You can traverse all visible annotation by hitting TAB.'/>
-                    </Card>
-                    <Card>
-                        <Card.Content header='Next/Prev image navigation' />
-                        <Card.Content description='Get next image by hitting ARROW_RIGHT key. Get previous image by hitting ARROW_LEFT key.'/>
+                        <Card.Content header='Finish annotation task'/>
+                        <Card.Content description='On the last image click a paper plane icon to finish the task.'/>
                     </Card>
                     </Card.Group>
                 </div>}
@@ -408,7 +396,7 @@ class ToolBar extends Component{
     }
 
     render(){
-        console.log('Toobar state', this.state, this.props.currentImage)
+        console.log('Toolbar state', this.state, this.props.currentImage)
         return(
         <div
             ref={this.toolBarGroup}

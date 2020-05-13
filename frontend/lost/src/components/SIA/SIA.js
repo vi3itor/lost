@@ -203,7 +203,7 @@ class SIA extends Component {
                     this.setState({notification:
                         {
                             title: "No next image",
-                            message: 'This is the last image!',
+                            message: 'This is the last image! Click paper plane icon in the toolbar if you have finished.',
                             type: notificationType.WARNING
                         }
                     })
