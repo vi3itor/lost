@@ -367,16 +367,15 @@ class ScriptOutput(Output):
                     frame_n=frame_n,
                     video_path=video_path,
                     anno_task_id=pe.anno_task.idx)
-                
 
     def request_annos(self, img_path, img_labels=None, img_sim_class=None, 
         annos=[], anno_types=[], anno_labels=[], anno_sim_classes=[], frame_n=None, 
         video_path=None):
-        '''Request annotations for a subsequent annotaiton task.
+        '''Request annotations for a subsequent annotation task.
 
         Args:
             img_path (str): Path to the image where annotations are added for.
-            img_label (list of int): Labels that will be assigned to the image. The labels should be
+            img_labels (list of int): Labels that will be assigned to the image. The labels should be
                 represented by a label_leaf_id. An image may have multiple labels.
             img_sim_class (int): A culster id that will be used to cluster this image
                 in the MIA annotation tool.

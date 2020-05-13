@@ -1,0 +1,7 @@
+idx,name,description,external_id,parent_leaf_id,is_root
+0,preferences,User preferences,,,True
+1,1-Poor,Poor,1,0,
+2,2-Fair,Fair,2,0,
+3,3-Good,Good,3,0,
+4,4-Very Good,Very Good,4,0,
+5,5-Excellent,Excellent,5,0,

@@ -15,7 +15,7 @@ ARGUMENTS = {'polygon' : { 'value':'false',
 class RequestAnnos(script.Script):
     '''Request annotations for each image of an imageset.
 
-    An imageset is basicly a folder with images.
+    An imageset is basically a folder with images.
     '''
     def main(self):
         for ds in self.inp.datasources:

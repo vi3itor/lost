@@ -3,8 +3,8 @@ import os
 import pandas as pd
 
 ENVS = ['lost']
-ARGUMENTS = {'file_name' : { 'value':'annos.csv',
-                            'help': 'Name of the file with exported bbox annotations.'}
+ARGUMENTS = {'file_name': {'value': 'annotations.csv',
+                            'help': 'Name of the file with exported annotations.'}
             }
 
 class ExportCsv(script.Script):
